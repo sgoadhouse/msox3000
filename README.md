@@ -10,7 +10,7 @@ although it is only tested with the DP832A.
 As new power supplies are added, they should each have their own sub-package.
 
 
-##Installation
+## Installation
 
 You need to install the pyvisa and pyvisa-py packages. 
 

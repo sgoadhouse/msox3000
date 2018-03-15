@@ -23,7 +23,7 @@
 # SOFTWARE.
  
 #-------------------------------------------------------------------------------
-#  Control a Rigol DP832A DC Triple Power Supply with PyVISA
+#  Control a Rigol DP8xx family of DC Power Supplies with PyVISA
 #
  
 # python (http://www.python.org/) [Works with 2.7+ and 3+]
@@ -42,12 +42,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from os import environ
 from time import sleep
 import visa
 
-class RigolDP832A(object):
-    """Basic class for controlling and accessing a Rigol DP832A Triple Power Supply"""
+class RigolDP800(object):
+    """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
 
     def __init__(self, resource):
         """Init the class with the instruments resource string
@@ -129,7 +128,7 @@ class RigolDP832A(object):
 
         self._inst.write(':SYSTem:RWLock ON')
     
-    def isOutputOn(self, channel):
+    def isOutputOn(self, channel=1):
         """Return true if the output of channel is ON, else false
         
            channel - number of the channel starting at 1
@@ -139,16 +138,18 @@ class RigolDP832A(object):
         ret = self._inst.query(str)
         return self._onORoff(ret)
     
-    def outputOn(self, channel):
+    def outputOn(self, wait=1.0, channel=1):
         """Turn on the output for channel
         
+           wait    - number of seconds to wait after sending command
            channel - number of the channel starting at 1
         """
 
         str = ':OUTPut:STATe {},ON'.format(self._chStr(channel))
         self._inst.write(str)
+        sleep(wait)             # give some time for PS to respond
     
-    def outputOff(self, channel):
+    def outputOff(self, wait=1.0, channel=1):
         """Turn off the output for channel
         
            channel - number of the channel starting at 1
@@ -156,30 +157,34 @@ class RigolDP832A(object):
 
         str = ':OUTPut:STATe {},OFF'.format(self._chStr(channel))
         self._inst.write(str)
+        sleep(wait)             # give some time for PS to respond
     
-    def setVoltage(self, channel, voltage):
+    def setVoltage(self, voltage, wait=1.0, channel=1):
         """Set the voltage value for the channel
         
-           channel - number of the channel starting at 1
            voltage - desired voltage value as a floating point number
+           wait    - number of seconds to wait after sending command
+           channel - number of the channel starting at 1
         """
 
         str = ':SOURce{}:VOLTage {}'.format(self._chanStr(channel), voltage)
         self._inst.write(str)
-
+        sleep(wait)             # give some time for PS to respond
         
-    def setCurrent(self, channel, current):
+    def setCurrent(self, current, wait=1.0, channel=1):
         """Set the current value for the channel
         
            channel - number of the channel starting at 1
+           wait    - number of seconds to wait after sending command
            current - desired current value as a floating point number
         """
 
         str = ':SOURce{}:CURRent {}'.format(self._chanStr(channel), current)
         self._inst.write(str)
+        sleep(wait)             # give some time for PS to respond
 
         
-    def queryVoltage(self, channel):
+    def queryVoltage(self, channel=1):
         """Return what voltage set value is (not the measured voltage,
         but the set voltage)
         
@@ -190,7 +195,7 @@ class RigolDP832A(object):
         ret = self._inst.query(str)
         return float(ret)
     
-    def queryCurrent(self, channel):
+    def queryCurrent(self, channel=1):
         """Return what current set value is (not the measured current,
         but the set current)
         
@@ -201,7 +206,7 @@ class RigolDP832A(object):
         ret = self._inst.query(str)
         return float(ret)
     
-    def measureVoltage(self, channel):
+    def measureVoltage(self, channel=1):
         """Read and return a voltage measurement from channel
         
            channel - number of the channel starting at 1
@@ -210,7 +215,7 @@ class RigolDP832A(object):
         val = self._inst.query(':MEAS:VOLT? ' + self._chStr(channel))
         return float(val)
     
-    def measureCurrent(self, channel):
+    def measureCurrent(self, channel=1):
         """Read and return a current measurement from channel
         
            channel - number of the channel starting at 1
@@ -222,44 +227,42 @@ class RigolDP832A(object):
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Access and control a Rigol DP832A power supply')
-    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control', default=1)
+    parser = argparse.ArgumentParser(description='Access and control a Rigol DP800 power supply')
+    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (starts at 1)', default=1)
     args = parser.parse_args()
 
-    resource = environ.get('DP832A_IP', 'TCPIP0::172.16.2.13::INSTR')
-    rigol = RigolDP832A(resource)
+    from time import sleep
+    from os import environ
+    resource = environ.get('DP800_IP', 'TCPIP0::172.16.2.13::INSTR')
+    rigol = RigolDP800(resource)
     rigol.open()
 
     ## set Remote Lock On
     #rigol.setRemoteLock()
     
     if not rigol.isOutputOn(args.chan):
-        rigol.outputOn(args.chan)
-        # give a second for power supply to enable its output
-        sleep(1.0)
+        rigol.outputOn(channel=args.chan)
         
     print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-              format(args.chan, rigol.queryVoltage(args.chan),
-                         rigol.queryCurrent(args.chan)))
+              format(args.chan, rigol.queryVoltage(channel=args.chan),
+                         rigol.queryCurrent(channel=args.chan)))
         
     #print(rigol.idn())
-    print('{:6.4f} V'.format(rigol.measureVoltage(args.chan)))
-    print('{:6.4f} A'.format(rigol.measureCurrent(args.chan)))
+    print('{:6.4f} V'.format(rigol.measureVoltage(channel=args.chan)))
+    print('{:6.4f} A'.format(rigol.measureCurrent(channel=args.chan)))
 
-    rigol.setVoltage(args.chan, 2.7)
-    sleep(1.0)
+    rigol.setVoltage(2.7, channel=args.chan)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage(args.chan)))
-    print('{:6.4f} A'.format(rigol.measureCurrent(args.chan)))
+    print('{:6.4f} V'.format(rigol.measureVoltage(channel=args.chan)))
+    print('{:6.4f} A'.format(rigol.measureCurrent(channel=args.chan)))
 
-    rigol.setVoltage(args.chan, 2.3)
-    sleep(1.0)
+    rigol.setVoltage(2.3, channel=args.chan)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage(args.chan)))
-    print('{:6.4f} A'.format(rigol.measureCurrent(args.chan)))
+    print('{:6.4f} V'.format(rigol.measureVoltage(channel=args.chan)))
+    print('{:6.4f} A'.format(rigol.measureCurrent(channel=args.chan)))
 
     ## turn off the channel
-    rigol.outputOff(args.chan)
+    rigol.outputOff(channel=args.chan)
 
     ## return to LOCAL mode
     rigol.setLocal()

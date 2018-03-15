@@ -1,6 +1,13 @@
-# dcps-visa
-Control of a Rigol DP832A DC Power Supply through pyVISA and the SCPI
-command set.
+# dcps
+Control of DC Power Supplies through python
+
+This is intended to be a generic package to control various DC power
+supplies using various access methods with a common API. For now, this
+only supports the Rigol DP832A DC Power Supply through pyVISA and the
+SCPI command set. This should work with all Rigol DP8xx power supplies
+although it is only tested with the DP832A.
+
+As new power supplies are added, they should each have their own sub-package.
 
 
 ## Requirements
@@ -13,7 +20,7 @@ Instruments NIVA driver.
 
 ## Taking it Further
 This implements a small subset of available commands. For information
-on what is possible, see the [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+on what is possible for the Rigol DP8xx, see the [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
 
 # WARNING!
 Be *really* careful since you are controlling a power supply that may be
@@ -23,7 +30,7 @@ the place. So be sure to do ALL testing without a device connected,
 as much as possible, and make use of the protections built into the
 power supply. For example, you can set voltage and current limits that
 the power supply will obey and ignore requests by these commands to go
-outside that allowable range. There are even SCPI commands to set
+outside the allowable ranges. There are even SCPI commands to set
 these limits, but they are not in this class because I think it is
 safer that they be set manually. Of course, you can easily add those
 commands and do it programatically if you like living dangerously.
@@ -37,5 +44,5 @@ any device in case voltsges unexpectedly go to unexpected values.
 
 Also, be sure to set the resource string or VISA descriptor of your
 particular device. You can either set an environment variable,
-DP832A_IP or change the code where the RigolDP832A() is being
+DP800_IP or change the code where the RigolDP800() is being
 instantiated.

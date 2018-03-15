@@ -10,11 +10,10 @@ although it is only tested with the DP832A.
 As new power supplies are added, they should each have their own sub-package.
 
 
-## Installation
-
+# Installation
 You need to install the pyvisa and pyvisa-py packages. 
 
-To install the dcps package, run the command ::
+To install the dcps package, run the command:
 
 ```
 python setup.py install
@@ -54,7 +53,6 @@ safer that they be set manually. Of course, you can easily add those
 commands and do it programatically if you like living dangerously.
 
 ## Usage
-
 The code is a very basic class for controlling and accessing the Rigol
 DP832A and other power supplies in the DP800 family. Before running
 any example, be extra sure that the power supply is disconnected from
@@ -67,7 +65,6 @@ DP800_IP or change the code where the RigolDP800() is being
 instantiated.
 
 ```python
-
 # Lookup environment variable DP800_IP and use it as the resource
 # name or use the TCPIP0 string if the environment variable does
 # not exist

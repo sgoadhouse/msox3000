@@ -76,26 +76,26 @@ resource = environ.get('DP800_IP', 'TCPIP0::172.16.2.13::INSTR')
 rigol = RigolDP800(resource)
 rigol.open()
 
-# access channel 1
-chan = 1
+# set to channel 1
+rigol.channel = 1
 
 # Query the voltage/current limits of the power supply
 print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-         format(chan, rigol.queryVoltage(channel=chan),
-                    rigol.queryCurrent(channel=chan)))
+         format(rigol.channel, rigol.queryVoltage(),
+                    rigol.queryCurrent()))
 
 # Enable output of channel
-rigol.outputOn(channel=chan)
+rigol.outputOn()
 
 # Measure actual voltage and current
-print('{:6.4f} V'.format(rigol.measureVoltage(channel=chan)))
-print('{:6.4f} A'.format(rigol.measureCurrent(channel=chan)))
+print('{:6.4f} V'.format(rigol.measureVoltage()))
+print('{:6.4f} A'.format(rigol.measureCurrent()))
 
 # change voltage output to 2.7V
-rigol.setVoltage(2.7, channel=chan)
+rigol.setVoltage(2.7)
 
 # turn off the channel
-rigol.outputOff(channel=chan)
+rigol.outputOff()
 
 # return to LOCAL mode
 rigol.setLocal()
@@ -107,6 +107,11 @@ rigol.close()
 This implements a small subset of available commands. For information
 on what is possible for the Rigol DP8xx, see the [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
 
+For what is possible with general power supplies that adhere to the
+IEEE 488 SCPI specification, see the
+[SCPI 1999 Specification](http://www.ivifoundation.org/docs/scpi-99.pdf)
+and
+[SCPI Wikipedia](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) entry.
 
 ## Contact
 Please send bug reports or feedback to Stephen Goadhouse

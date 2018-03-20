@@ -15,7 +15,7 @@ except(IOError, ImportError):
 
 
 setup(name="dcps", 
-      version='0.2',
+      version='0.3',
       description='Control of DC Power Supplies through python',
       long_description=long_description,
       url='https://github.com/sgoadhouse/dcps',
@@ -24,7 +24,7 @@ setup(name="dcps",
       maintainer='Stephen Goadhouse',
       maintainer_email="sgoadhouse@virginia.edu",
       license='MIT',
-      keywords=['Rigol','DP800', 'PyVISA', 'VISA', 'SCPI'],
+      keywords=['Rigol', 'DP800', 'DP832A', 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

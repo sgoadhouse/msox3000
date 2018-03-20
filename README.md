@@ -108,9 +108,9 @@ This implements a small subset of available commands. For information
 on what is possible for the Rigol DP8xx, see the [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
 
 For what is possible with general power supplies that adhere to the
-IEEE 488 SCPI specification, see the
+IEEE 488 SCPI specification, like the Rigol DP8xx, see the
 [SCPI 1999 Specification](http://www.ivifoundation.org/docs/scpi-99.pdf)
-and
+and the
 [SCPI Wikipedia](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) entry.
 
 ## Contact

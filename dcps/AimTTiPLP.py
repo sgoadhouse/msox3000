@@ -23,11 +23,7 @@
 # SOFTWARE.
  
 #-------------------------------------------------------------------------------
-#  Control DC Power Supplies using standard SCPI commands with PyVISA
-#
-# For more information on SCPI, see:
-# https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments
-# http://www.ivifoundation.org/docs/scpi-99.pdf
+#  Control a Aim TTi PL-P Series DC Power Supplies with PyVISA
 #-------------------------------------------------------------------------------
 
 # For future Python3 compatibility:
@@ -35,136 +31,75 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+try:
+    from . import SCPI
+except ValueError:
+    from SCPI import SCPI
+    
 from time import sleep
 import visa
+import re
 
-class SCPI(object):
-    """Basic class for controlling and accessing a Power Supply with Standard SCPI Commands"""
+class AimTTiPLP(SCPI):
+    """Basic class for controlling and accessing an Aim TTi PL-P Series
+    Power Supply. This series of power supplies only minimally adheres
+    to any LXI specifications and so it uses its own commands although
+    it adheres to the basic syntax of SCPI. The underlying accessor
+    functions of SCPI.py are used but the top level are all re-written
+    below to handle the very different command syntax. This shows how
+    one might add packages to support other such power supplies that
+    only minimally adhere to the command standards.
+    """
 
-    def __init__(self, resource, max_chan=1, wait=1.0,
-                     cmd_prefix = '',
-                     read_termination = '',
-                     write_termination = ''):
+    def __init__(self, resource):
         """Init the class with the instruments resource string
 
-        resource   - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
-        max_chan   - number of channels in power supply
-        wait       - float that gives the default number of seconds to wait after sending each command
-        cmd_prefix - optional command prefix (ie. some instruments require a ':' prefix)
-        read_termination - optional read_termination parameter to pass to open_resource()
-        write_termination - optional write_termination parameter to pass to open_resource()
+        resource - resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
+
+        NOTE: According to the documentation for this power supply, the
+        resource string when using the Ethernet access method must look
+        like TCPIP0::192.168.1.100::9221::SOCKET where 192.168.1.100 is
+        replaced with the specific IP address of the power supply. The
+        inclusion of the 9221 port number and SOCKET keyword are
+        apparently mandatory for these power supplies.
         """
-        self._resource = resource
-        self._max_chan = max_chan                # number of channels
-        self._wait = wait
-        self._prefix = cmd_prefix
-        self._curr_chan = 1                      # set the current channel to the first one
-        self._read_termination = read_termination
-        self._write_termination = write_termination
-        self._inst = None        
-
-    def open(self):
-        """Open a connection to the VISA device with PYVISA-py python library"""
-        self._rm = visa.ResourceManager('@py')
-        self._inst = self._rm.open_resource(self._resource,
-                                            read_termination=self._read_termination,
-                                            write_termination=self._write_termination)
-
-    def close(self):
-        """Close the VISA connection"""
-        self._inst.close()
-
-    @property
-    def channel(self):
-        return self._curr_chan
-    
-    @channel.setter
-    def channel(self, value):
-        if (value < 1) or (value > self._max_chan):
-            raise ValueError('Invalid channel number: {}. Must be between {} and {}, inclusive.'.
-                                 format(channel, 1, self._max_chan))
-        self._curr_chan = value
-
-    def _instQuery(self, queryStr):
-        if (queryStr[0] != '*'):
-            queryStr = self._prefix + queryStr
-        #print("QUERY:",queryStr)
-        return self._inst.query(queryStr)
-        
-    def _instWrite(self, writeStr):
-        if (writeStr[0] != '*'):
-            writeStr = self._prefix + writeStr
-        #print("WRITE:",writeStr)
-        return self._inst.write(writeStr)
-        
-    def _chStr(self, channel):
-        """return the channel string given the channel number and using the format CHx"""
-
-        return 'CH{}'.format(channel)
-    
-    def _chanStr(self, channel):
-        """return the channel string given the channel number and using the format x"""
-
-        return '{}'.format(channel)
-    
-    def _onORoff(self, str):
-        """Check if string says it is ON or OFF and return True if ON
-        and False if OFF
-        """
-
-        # Only check first two characters so do not need to deal with
-        # trailing whitespace and such
-        if str[:2] == 'ON':
-            return True
-        else:
-            return False
-        
-    def _wait(self):
-        """Wait until all preceeding commands complete"""
-        #self._instWrite('*WAI')
-        self._instWrite('*OPC')
-        wait = True
-        while(wait):
-            ret = self._instQuery('*OPC?')
-            if ret[0] == '1':
-                wait = False
-        
-    def idn(self):
-        """Return response to *IDN? message"""
-        return self._instQuery('*IDN?')
+        super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=1,
+                                        cmd_prefix='',
+                                        read_termination='\n',
+                                        write_termination='\r\n')
 
     def setLocal(self):
         """Set the power supply to LOCAL mode where front panel keys work again
         """
-
-        # Not sure if this is SCPI, but it appears to be supported
-        # across different instruments
-        self._instWrite('SYSTem:LOCal')
+        self._instWrite('LOCAL')
     
     def setRemote(self):
         """Set the power supply to REMOTE mode where it is controlled via VISA
         """
-
-        # Not sure if this is SCPI, but it appears to be supported
-        # across different instruments
-        self._instWrite('SYSTem:REMote')
+        # Not supported explicitly by this power supply but the power
+        # supply does switch to REMOTE automatically. So send any
+        # command to do it.
+        self._instWrite('*WAI')
     
     def setRemoteLock(self):
         """Set the power supply to REMOTE Lock mode where it is
            controlled via VISA & front panel is locked out
         """
-
-        # Not sure if this is SCPI, but it appears to be supported
-        # across different instruments
-        self._instWrite('SYSTem:RWLock ON')
+        self._instWrite('IFLOCK')
 
     def beeperOn(self):
         """Enable the system beeper for the instrument"""
-        self._instWrite('SYSTem:BEEPer:STATe ON')        
+        # NOTE: Unsupported command by this power supply. However,
+        # instead of raising an exception and breaking any scripts,
+        # simply return quietly.
+        pass
         
     def beeperOff(self):
         """Disable the system beeper for the instrument"""
-        self._instWrite('SYSTem:BEEPer:STATe OFF')
+        # NOTE: Unsupported command by this power supply. However,
+        # instead of raising an exception and breaking any scripts,
+        # simply return quietly.
+        pass
         
     def isOutputOn(self, channel=None):
         """Return true if the output of channel is ON, else false
@@ -177,11 +112,13 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        # @@@str = 'OUTPut:STATe? {}'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe?'.format(self.channel)
+        str = 'OP{}?'.format(self.channel)
         ret = self._instQuery(str)
-        # @@@print("1:", ret)
-        return self._onORoff(ret)
+
+        if (ret == '1'):
+            return True
+        else:
+            return False
     
     def outputOn(self, channel=None, wait=None):
         """Turn on the output for channel
@@ -200,8 +137,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},ON'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(self.channel)
+        str = 'OP{} 1'.format(self.channel)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
@@ -221,8 +157,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},OFF'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(self.channel)
+        str = 'OP{} 0'.format(self.channel)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
@@ -236,10 +171,8 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
 
-        for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(chan)
-            self._instWrite(str)
-            
+        str = 'OPALL 1'.format(self.channel)
+        self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
     def outputOffAll(self, wait=None):
@@ -252,10 +185,8 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
 
-        for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(chan)
-            self._instWrite(str)
-            
+        str = 'OPALL 0'.format(self.channel)
+        self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
     def setVoltage(self, voltage, channel=None, wait=None):
@@ -276,8 +207,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'SOURce{}:VOLTage {}'.format(self._chanStr(self.channel), voltage)
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(self.channel, voltage)
+        str = 'V{} {}'.format(self.channel, voltage)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
         
@@ -299,8 +229,7 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'SOURce{}:CURRent {}'.format(self._chanStr(self.channel), current)
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(self.channel, current)
+        str = 'I{} {}'.format(self.channel, current)
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
 
@@ -317,10 +246,23 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        # @@@str = 'SOURce{}:VOLTage?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude?'.format(self.channel)
+        str = 'V{}?'.format(self.channel)
         ret = self._instQuery(str)
-        return float(ret)
+
+        # Pull out words from response
+        match = re.match('^([^\s]+)\s([0-9]+)\s([0-9.+-]+)',ret)
+        if (match == None):
+            raise RuntimeError('Unexpected response: "{}"'.format(ret))
+        else:
+            # break out the words from the response
+            words = match.groups()
+            if (len(words) != 3):
+                raise RuntimeError('Unexpected number of words in response: "{}"'.format(ret))
+            elif(words[0] != 'V' or int(words[1]) != self.channel):
+                raise ValueError('Unexpected response format: "{}"'.format(ret))
+            else:
+                # response checks out so return the fixed point response as a float()
+                return float(words[2])
     
     def queryCurrent(self, channel=None):
         """Return what current set value is (not the measured current,
@@ -334,10 +276,23 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
-        # @@@str = 'SOURce{}:CURRent?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude?'.format(self.channel)
+        str = 'I{}?'.format(self.channel)
         ret = self._instQuery(str)
-        return float(ret)
+
+        # Pull out words from response
+        match = re.match('^([^\s]+)\s([0-9]+)\s([0-9.+-]+)',ret)
+        if (match == None):
+            raise RuntimeError('Unexpected response: "{}"'.format(ret))
+        else:
+            # break out the words from the response
+            words = match.groups()
+            if (len(words) != 3):
+                raise RuntimeError('Unexpected number of words in response: "{}"'.format(ret))
+            elif(words[0] != 'I' or int(words[1]) != self.channel):
+                raise ValueError('Unexpected response format: "{}"'.format(ret))
+            else:
+                # response checks out so return the fixed point response as a float()
+                return float(words[2])
     
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
@@ -350,9 +305,23 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
                     
-        str = 'INSTrument:NSELect {}; MEASure:VOLTage:DC?'.format(self.channel)
+        str = 'V{}O?'.format(self.channel)
         val = self._instQuery(str)
-        return float(val)
+
+        # Pull out words from response
+        match = re.match('^([0-9.+-]+)([^\s]+)',ret)
+        if (match == None):
+            raise RuntimeError('Unexpected response: "{}"'.format(ret))
+        else:
+            # break out the words from the response
+            words = match.groups()
+            if (len(words) != 2):
+                raise RuntimeError('Unexpected number of words in response: "{}"'.format(ret))
+            elif(words[1] != 'V'):
+                raise ValueError('Unexpected response format: "{}"'.format(ret))
+            else:
+                # response checks out so return the fixed point response as a float()
+                return float(words[0])
     
     def measureCurrent(self, channel=None):
         """Read and return a current measurement from channel
@@ -365,8 +334,76 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        str = 'INSTrument:NSELect {}; MEASure:CURRent:DC?'.format(self.channel)
+        str = 'I{}O?'.format(self.channel)
         val = self._instQuery(str)
-        return float(val)
+
+        # Pull out words from response
+        match = re.match('^([0-9.+-]+)([^\s]+)',ret)
+        if (match == None):
+            raise RuntimeError('Unexpected response: "{}"'.format(ret))
+        else:
+            # break out the words from the response
+            words = match.groups()
+            if (len(words) != 2):
+                raise RuntimeError('Unexpected number of words in response: "{}"'.format(ret))
+            elif(words[1] != 'A'):
+                raise ValueError('Unexpected response format: "{}"'.format(ret))
+            else:
+                # response checks out so return the fixed point response as a float()
+                return float(words[0])
     
 
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Access and control a Aim TTi PL-P Series power supply')
+    parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (starts at 1)', default=1)
+    args = parser.parse_args()
+
+    from time import sleep
+    from os import environ
+    resource = environ.get('TTIPLP_IP', 'TCPIP0::192.168.1.100::9221::SOCKET')
+    ttiplp = AimTTiPLP(resource)
+    ttiplp.open()
+
+    ## set Remote Lock On
+    #ttiplp.setRemoteLock()
+    
+    ttiplp.beeperOff()
+    
+    if not ttiplp.isOutputOn(args.chan):
+        ttiplp.outputOn()
+        
+    print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
+              format(args.chan, ttiplp.queryVoltage(),
+                         ttiplp.queryCurrent()))
+
+    voltageSave = ttiplp.queryVoltage()
+    
+    #print(ttiplp.idn())
+    print('{:6.4f} V'.format(ttiplp.measureVoltage()))
+    print('{:6.4f} A'.format(ttiplp.measureCurrent()))
+
+    ttiplp.setVoltage(2.7)
+
+    print('{:6.4f} V'.format(ttiplp.measureVoltage()))
+    print('{:6.4f} A'.format(ttiplp.measureCurrent()))
+
+    ttiplp.setVoltage(2.3)
+
+    print('{:6.4f} V'.format(ttiplp.measureVoltage()))
+    print('{:6.4f} A'.format(ttiplp.measureCurrent()))
+
+    ttiplp.setVoltage(voltageSave)
+
+    print('{:6.4f} V'.format(ttiplp.measureVoltage()))
+    print('{:6.4f} A'.format(ttiplp.measureCurrent()))
+
+    ## turn off the channel
+    ttiplp.outputOff()
+
+    ttiplp.beeperOn()
+
+    ## return to LOCAL mode
+    ttiplp.setLocal()
+    
+    ttiplp.close()

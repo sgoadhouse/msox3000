@@ -3,9 +3,10 @@ Control of DC Power Supplies through python
 
 This is intended to be a generic package to control various DC power
 supplies using various access methods with a common API. For now, this
-only supports the Rigol DP832A DC Power Supply through pyVISA and the
-SCPI command set. This should work with all Rigol DP8xx power supplies
-although it is only tested with the DP832A.
+supports only the Rigol DP832A DC Power Supply and the Aim TTi PL-P
+Series of power supplies through pyVISA and the SCPI command set. For
+the RigolDP800 class, this should work with all Rigol DP8xx power
+supplies although it is only tested with the DP832A.
 
 As new power supplies are added, they should each have their own sub-package.
 
@@ -53,16 +54,17 @@ safer that they be set manually. Of course, you can easily add those
 commands and do it programatically if you like living dangerously.
 
 ## Usage
-The code is a very basic class for controlling and accessing the Rigol
-DP832A and other power supplies in the DP800 family. Before running
-any example, be extra sure that the power supply is disconnected from
-any device in case voltsges unexpectedly go to unexpected values.
+The code is a very basic class for controlling and accessing the
+supported power supplies. Before running any example, be extra sure
+that the power supply is disconnected from any device in case voltsges
+unexpectedly go to unexpected values.
 
 If running the examples embedded in the individual package source
-files, be sure to set the resource string or VISA descriptor of your
-particular device. You can either set an environment variable,
-DP800_IP or change the code where the RigolDP800() is being
-instantiated.
+files, be sure to edit the resource string or VISA descriptor of your
+particular device. For RigolDP800.py, you can also set an environment
+variable, DP800\_IP to the desired resource string before running the
+code. For AimTTiPLP.py, there is a similar environment variable,
+TTIPLP\_IP.
 
 ```python
 # Lookup environment variable DP800_IP and use it as the resource
@@ -104,8 +106,13 @@ rigol.close()
 ```
 
 ## Taking it Further
-This implements a small subset of available commands. For information
-on what is possible for the Rigol DP8xx, see the [Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+This implements a small subset of available commands.
+
+For information on what is possible for the Rigol DP8xx, see the
+[Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+
+For informatio non what is possible for the Aim TTi PL-P power
+supplies, see the [New PL & PL-P Series Instruction Manual](http://resources.aimtti.com/manuals/New_PL+PL-P_Series_Instruction_Manual-Iss18.pdf)
 
 For what is possible with general power supplies that adhere to the
 IEEE 488 SCPI specification, like the Rigol DP8xx, see the

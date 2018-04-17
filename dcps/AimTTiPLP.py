@@ -115,7 +115,8 @@ class AimTTiPLP(SCPI):
         str = 'OP{}?'.format(self.channel)
         ret = self._instQuery(str)
 
-        if (ret == '1'):
+        # Only check first character so that there can be training whitespace that gets ignored
+        if (ret[0] == '1'):
             return True
         else:
             return False
@@ -250,7 +251,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([^\s]+)\s([0-9]+)\s([0-9.+-]+)',ret)
+        match = re.match('^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
@@ -280,7 +281,7 @@ class AimTTiPLP(SCPI):
         ret = self._instQuery(str)
 
         # Pull out words from response
-        match = re.match('^([^\s]+)\s([0-9]+)\s([0-9.+-]+)',ret)
+        match = re.match('^([^\s0-9]+)([0-9]+)\s+([0-9.+-]+)',ret)
         if (match == None):
             raise RuntimeError('Unexpected response: "{}"'.format(ret))
         else:
@@ -306,7 +307,7 @@ class AimTTiPLP(SCPI):
             self.channel = channel
                     
         str = 'V{}O?'.format(self.channel)
-        val = self._instQuery(str)
+        ret = self._instQuery(str)
 
         # Pull out words from response
         match = re.match('^([0-9.+-]+)([^\s]+)',ret)
@@ -335,7 +336,7 @@ class AimTTiPLP(SCPI):
             self.channel = channel
             
         str = 'I{}O?'.format(self.channel)
-        val = self._instQuery(str)
+        ret = self._instQuery(str)
 
         # Pull out words from response
         match = re.match('^([0-9.+-]+)([^\s]+)',ret)

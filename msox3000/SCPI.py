@@ -22,8 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
  
-#-------------------------------------------------------------------------------
-#  Control DC Power Supplies using standard SCPI commands with PyVISA
+#---------------------------------------------------------------------------------
+#  Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope using
+#  standard SCPI commands with PyVISA
 #
 # For more information on SCPI, see:
 # https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments
@@ -39,12 +40,13 @@ from time import sleep
 import visa
 
 class SCPI(object):
-    """Basic class for controlling and accessing a Power Supply with Standard SCPI Commands"""
+    """Basic class for controlling and accessing an Oscilloscope with Standard SCPI Commands"""
 
-    def __init__(self, resource, max_chan=1, wait=1.0,
+    def __init__(self, resource, max_chan=1, wait=0,
                      cmd_prefix = '',
                      read_termination = '',
-                     write_termination = ''):
+                     write_termination = '',
+                     timeout = 15000):
         """Init the class with the instruments resource string
 
         resource   - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
@@ -61,6 +63,7 @@ class SCPI(object):
         self._curr_chan = 1                      # set the current channel to the first one
         self._read_termination = read_termination
         self._write_termination = write_termination
+        self._timeout = timeout
         self._inst = None        
 
     def open(self):
@@ -69,6 +72,8 @@ class SCPI(object):
         self._inst = self._rm.open_resource(self._resource,
                                             read_termination=self._read_termination,
                                             write_termination=self._write_termination)
+        self._inst.timeout = self._timeout
+        self._inst.clear()
 
     def close(self):
         """Close the VISA connection"""
@@ -89,7 +94,9 @@ class SCPI(object):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERY:",queryStr)
-        return self._inst.query(queryStr)
+        result = self._inst.query(queryStr)
+        self.checkInstErrors(queryStr)
+        return result
         
     def _instWrite(self, writeStr):
         if (writeStr[0] != '*'):
@@ -129,6 +136,58 @@ class SCPI(object):
             if ret[0] == '1':
                 wait = False
         
+    # =========================================================
+    # Taken from the MSO-X 3000 Programming Guide and modified to work
+    # within this class ...
+    # =========================================================
+    # Check for instrument errors:
+    # =========================================================
+    def checkInstErrors(self, commandStr):
+
+        while True:
+            error_string = self._instQuery(":SYSTem:ERRor?")
+            if error_string: # If there is an error string value.
+                if error_string.find("+0,", 0, 3) == -1:
+                    # Not "No error".
+                    print("ERROR: {}, command: '{}'".format(error_string, commandStr)
+                    #print "Exited because of error."
+                    #sys.exit(1)
+                    return True           # indicate there was an error
+                else: # "No error"
+                    #break
+                    return False          # NO ERROR!
+
+            else: # :SYSTem:ERRor? should always return string.
+                print("ERROR: :SYSTem:ERRor? returned nothing, command: '{}'").format(commandStr)
+                #print "Exited because of error."
+                #sys.exit(1)
+
+        return True           # indicate there was an error
+
+    # =========================================================
+    # Based on do_query_ieee_block() from the MSO-X 3000 Programming
+    # Guide and modified to work within this class ...
+    # =========================================================
+    def _instQueryIEEEBlock(self, queryStr):
+        if (queryStr[0] != '*'):
+            queryStr = self._prefix + queryStr
+        #print("QUERYIEEEBlock:",queryStr)
+        result = self._inst.query_binary_values(queryStr, datatype='s')
+        self.checkInstErrors(queryStr)
+        return result[0]
+            
+    # =========================================================
+    # Based on do_command_ieee_block() from the MSO-X 3000 Programming
+    # Guide and modified to work within this class ...
+    # =========================================================
+    def _instWriteIEEEBlock(self, writeStr, values):
+        if (writeStr[0] != '*'):
+            writeStr = self._prefix + writeStr
+        #print("WRITE:",writeStr)
+        result = self._inst.write_binary_values(writeStr, values, datatype='c')
+        self.checkInstErrors(writeStr)
+        return result
+        
     def idn(self):
         """Return response to *IDN? message"""
         return self._instQuery('*IDN?')
@@ -139,7 +198,7 @@ class SCPI(object):
 
         # Not sure if this is SCPI, but it appears to be supported
         # across different instruments
-        self._instWrite('SYSTem:LOCal')
+        self._instWrite('SYSTem:LOCK OFF')
     
     def setRemote(self):
         """Set the power supply to REMOTE mode where it is controlled via VISA
@@ -147,7 +206,7 @@ class SCPI(object):
 
         # Not sure if this is SCPI, but it appears to be supported
         # across different instruments
-        self._instWrite('SYSTem:REMote')
+        self._instWrite('SYSTem:LOCK ON')
     
     def setRemoteLock(self):
         """Set the power supply to REMOTE Lock mode where it is
@@ -156,17 +215,19 @@ class SCPI(object):
 
         # Not sure if this is SCPI, but it appears to be supported
         # across different instruments
-        self._instWrite('SYSTem:RWLock ON')
+        self._instWrite('SYSTem:LOCK ON')
 
     def beeperOn(self):
         """Enable the system beeper for the instrument"""
-        self._instWrite('SYSTem:BEEPer:STATe ON')        
+        # no beeper to turn off, so make it do nothing
+        pass
         
     def beeperOff(self):
         """Disable the system beeper for the instrument"""
-        self._instWrite('SYSTem:BEEPer:STATe OFF')
-        
-    def isOutputOn(self, channel=None):
+        # no beeper to turn off, so make it do nothing
+        pass
+
+    def isOutputOnOLD(self, channel=None):
         """Return true if the output of channel is ON, else false
         
            channel - number of the channel starting at 1
@@ -183,7 +244,7 @@ class SCPI(object):
         # @@@print("1:", ret)
         return self._onORoff(ret)
     
-    def outputOn(self, channel=None, wait=None):
+    def outputOnOLD(self, channel=None, wait=None):
         """Turn on the output for channel
         
            wait    - number of seconds to wait after sending command
@@ -205,7 +266,7 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
-    def outputOff(self, channel=None, wait=None):
+    def outputOffOLD(self, channel=None, wait=None):
         """Turn off the output for channel
         
            channel - number of the channel starting at 1
@@ -226,7 +287,7 @@ class SCPI(object):
         self._instWrite(str)
         sleep(wait)             # give some time for PS to respond
     
-    def outputOnAll(self, wait=None):
+    def outputOnAllOLD(self, wait=None):
         """Turn on the output for ALL channels
         
         """
@@ -242,7 +303,7 @@ class SCPI(object):
             
         sleep(wait)             # give some time for PS to respond
     
-    def outputOffAll(self, wait=None):
+    def outputOffAllOLD(self, wait=None):
         """Turn off the output for ALL channels
         
         """
@@ -257,87 +318,6 @@ class SCPI(object):
             self._instWrite(str)
             
         sleep(wait)             # give some time for PS to respond
-    
-    def setVoltage(self, voltage, channel=None, wait=None):
-        """Set the voltage value for the channel
-        
-           voltage - desired voltage value as a floating point number
-           wait    - number of seconds to wait after sending command
-           channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        # If a wait time is NOT passed in, set wait to the
-        # default time
-        if wait is None:
-            wait = self._wait
-            
-        # @@@str = 'SOURce{}:VOLTage {}'.format(self._chanStr(self.channel), voltage)
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude {}'.format(self.channel, voltage)
-        self._instWrite(str)
-        sleep(wait)             # give some time for PS to respond
-        
-    def setCurrent(self, current, channel=None, wait=None):
-        """Set the current value for the channel
-        
-           current - desired current value as a floating point number
-           channel - number of the channel starting at 1
-           wait    - number of seconds to wait after sending command
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-
-        # If a wait time is NOT passed in, set wait to the
-        # default time
-        if wait is None:
-            wait = self._wait
-            
-        # @@@str = 'SOURce{}:CURRent {}'.format(self._chanStr(self.channel), current)
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude {}'.format(self.channel, current)
-        self._instWrite(str)
-        sleep(wait)             # give some time for PS to respond
-
-        
-    def queryVoltage(self, channel=None):
-        """Return what voltage set value is (not the measured voltage,
-        but the set voltage)
-        
-        channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        # @@@str = 'SOURce{}:VOLTage?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:VOLTage:LEVel:IMMediate:AMPLitude?'.format(self.channel)
-        ret = self._instQuery(str)
-        return float(ret)
-    
-    def queryCurrent(self, channel=None):
-        """Return what current set value is (not the measured current,
-        but the set current)
-        
-        channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-                    
-        # @@@str = 'SOURce{}:CURRent?'.format(self._chanStr(self.channel))
-        str = 'INSTrument:NSELect {}; SOURce:CURRent:LEVel:IMMediate:AMPLitude?'.format(self.channel)
-        ret = self._instQuery(str)
-        return float(ret)
     
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
@@ -354,19 +334,5 @@ class SCPI(object):
         val = self._instQuery(str)
         return float(val)
     
-    def measureCurrent(self, channel=None):
-        """Read and return a current measurement from channel
-        
-           channel - number of the channel starting at 1
-        """
-
-        # If a channel number is passed in, make it the
-        # current channel
-        if channel is not None:
-            self.channel = channel
-            
-        str = 'INSTrument:NSELect {}; MEASure:CURRent:DC?'.format(self.channel)
-        val = self._instQuery(str)
-        return float(val)
     
 

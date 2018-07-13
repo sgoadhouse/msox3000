@@ -23,7 +23,7 @@
 # SOFTWARE.
  
 #-------------------------------------------------------------------------------
-#  Control a Rigol DP8xx family of DC Power Supplies with PyVISA
+#  Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope with PyVISA
 #-------------------------------------------------------------------------------
 
 # For future Python3 compatibility:
@@ -39,70 +39,85 @@ except ValueError:
 from time import sleep
 import visa
 
-class RigolDP800(SCPI):
-    """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
+class MSOX3000(SCPI):
+    """Basic class for controlling and accessing a HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope"""
 
-    def __init__(self, resource, wait=1.0):
+    def __init__(self, resource, wait=0):
         """Init the class with the instruments resource string
 
         resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
         wait     - float that gives the default number of seconds to wait after sending each command
         """
-        super(RigolDP800, self).__init__(resource, max_chan=3, wait=wait, cmd_prefix=':')
+        super(MSOX3000, self).__init__(resource, max_chan=4, wait=wait, cmd_prefix=':')
 
-    
+
+    # =========================================================
+    # Based on the screen image download example the MSO-X 3000 Programming
+    # Guide and modified to work within this class ...
+    # =========================================================
+    def hardcopy(self, filename):
+        """ Download the screen image to the given filename. """
+
+        self._instWrite(":HARDcopy:INKSaver OFF")
+        scrImage = self._instWriteIEEEBlock(":DISPlay:DATA? PNG, COLor")
+
+        # Save display data values to file.
+        f = open(filename, "wb")
+        f.write(scrImage)
+        f.close()
+
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Access and control a Rigol DP800 power supply')
+    parser = argparse.ArgumentParser(description='Access and control a MSO-X/DSO-X 3000 Oscilloscope')
     parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (starts at 1)', default=1)
     args = parser.parse_args()
 
     from time import sleep
     from os import environ
-    resource = environ.get('DP800_IP', 'TCPIP0::172.16.2.13::INSTR')
-    rigol = RigolDP800(resource)
-    rigol.open()
+    resource = environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
+    instr = MSOX3000(resource)
+    instr.open()
 
     ## set Remote Lock On
-    #rigol.setRemoteLock()
+    #instr.setRemoteLock()
     
-    rigol.beeperOff()
+    instr.beeperOff()
     
-    if not rigol.isOutputOn(args.chan):
-        rigol.outputOn()
+    if not instr.isOutputOn(args.chan):
+        instr.outputOn()
         
     print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-              format(args.chan, rigol.queryVoltage(),
-                         rigol.queryCurrent()))
+              format(args.chan, instr.queryVoltage(),
+                         instr.queryCurrent()))
 
-    voltageSave = rigol.queryVoltage()
+    voltageSave = instr.queryVoltage()
     
-    #print(rigol.idn())
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    #print(instr.idn())
+    print('{:6.4f} V'.format(instr.measureVoltage()))
+    print('{:6.4f} A'.format(instr.measureCurrent()))
 
-    rigol.setVoltage(2.7)
+    instr.setVoltage(2.7)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(instr.measureVoltage()))
+    print('{:6.4f} A'.format(instr.measureCurrent()))
 
-    rigol.setVoltage(2.3)
+    instr.setVoltage(2.3)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(instr.measureVoltage()))
+    print('{:6.4f} A'.format(instr.measureCurrent()))
 
-    rigol.setVoltage(voltageSave)
+    instr.setVoltage(voltageSave)
 
-    print('{:6.4f} V'.format(rigol.measureVoltage()))
-    print('{:6.4f} A'.format(rigol.measureCurrent()))
+    print('{:6.4f} V'.format(instr.measureVoltage()))
+    print('{:6.4f} A'.format(instr.measureCurrent()))
 
     ## turn off the channel
-    rigol.outputOff()
+    instr.outputOff()
 
-    rigol.beeperOn()
+    instr.beeperOn()
 
     ## return to LOCAL mode
-    rigol.setLocal()
+    instr.setLocal()
     
-    rigol.close()
+    instr.close()

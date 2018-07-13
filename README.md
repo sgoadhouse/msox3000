@@ -1,20 +1,27 @@
-# dcps
-Control of DC Power Supplies through python
+# msox3000
+Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope through python via PyVisa
 
-This is intended to be a generic package to control various DC power
-supplies using various access methods with a common API. For now, this
-supports only the Rigol DP832A DC Power Supply and the Aim TTi PL-P
-Series of power supplies through pyVISA and the SCPI command set. For
-the RigolDP800 class, this should work with all Rigol DP8xx power
-supplies although it is only tested with the DP832A.
+Using my previous work on dcps as a guide, this is intended to be a
+generic package to control various Oscilloscopes. However, it is
+expected that very few oscilloscopes share the same commands so start
+off as a python Class specifically for the MSO-X/DSO-X 3000A
+Oscilloscope. So will start targeted toward that family of
+oscilloscope with a common SCPI.py Class. If it proves useful for
+other oscilloscopes, then will create a new project but at least this
+one would have started with that in mind.
 
-As new power supplies are added, they should each have their own sub-package.
+It may also work on the MSO-X/DSO-X 2000A oscilloscope
+but I have not looked into the differences ot know for sure. Try it
+out and let me know.
 
+Like dcps, this will use the brilliant PyVISA python package along
+with the PyVisa-PY access mode which eliminates the need for the (very
+buggy) VISA library to be installed on your computer. 
 
 # Installation
 You need to install the pyvisa and pyvisa-py packages. 
 
-To install the dcps package, run the command:
+To install the msox3000 package, run the command:
 
 ```
 python setup.py install
@@ -25,11 +32,12 @@ variable PYTHONPATH or even add the path to it at the start of your
 python script. Use your favorite web search engine to find out more
 details.
 
-Even better, dcps is now on PyPi, so you can simply use the following
-and the required depedancies should get installed for you:
+Even better, msox3000 will eventually be on PyPi. Once it is there,
+you can simply use the following and the required depedancies should
+get installed for you:
 
 ```
-pip install dcps
+pip install msox3000
 ```
 
 ## Requirements
@@ -40,82 +48,65 @@ pip install dcps
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA driver.
 
-# WARNING!
-Be *really* careful since you are controlling a power supply that may be
-connected to something that does not like to go to 33V when you
-meant 3.3V and it may express its displeasure by exploding all over
-the place. So be sure to do ALL testing without a device connected,
-as much as possible, and make use of the protections built into the
-power supply. For example, you can set voltage and current limits that
-the power supply will obey and ignore requests by these commands to go
-outside the allowable ranges. There are even SCPI commands to set
-these limits, but they are not in this class because I think it is
-safer that they be set manually. Of course, you can easily add those
-commands and do it programatically if you like living dangerously.
-
 ## Usage
 The code is a very basic class for controlling and accessing the
-supported power supplies. Before running any example, be extra sure
-that the power supply is disconnected from any device in case voltsges
-unexpectedly go to unexpected values.
+supported oscilloscopes.
 
 If running the examples embedded in the individual package source
 files, be sure to edit the resource string or VISA descriptor of your
-particular device. For RigolDP800.py, you can also set an environment
-variable, DP800\_IP to the desired resource string before running the
-code. For AimTTiPLP.py, there is a similar environment variable,
-TTIPLP\_IP.
+particular device. For MSOX3000.py, you can also set an environment
+variable, MSOX3000\_IP to the desired resource string before running the
+code. 
 
 ```python
-# Lookup environment variable DP800_IP and use it as the resource
+# Lookup environment variable MSOX3000_IP and use it as the resource
 # name or use the TCPIP0 string if the environment variable does
 # not exist
-from dcps import RigolDP800
+from msox3000 import MSOX3000
 from os import environ
-resource = environ.get('DP800_IP', 'TCPIP0::172.16.2.13::INSTR')
+resource = environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
 
 # create your visa instrument
-rigol = RigolDP800(resource)
-rigol.open()
+instr = MSOX3000(resource)
+instr.open()
 
 # set to channel 1
-rigol.channel = 1
+instr.channel = 1
 
 # Query the voltage/current limits of the power supply
 print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-         format(rigol.channel, rigol.queryVoltage(),
-                    rigol.queryCurrent()))
+         format(instr.channel, instr.queryVoltage(),
+                    instr.queryCurrent()))
 
 # Enable output of channel
-rigol.outputOn()
+instr.outputOn()
 
 # Measure actual voltage and current
-print('{:6.4f} V'.format(rigol.measureVoltage()))
-print('{:6.4f} A'.format(rigol.measureCurrent()))
+print('{:6.4f} V'.format(instr.measureVoltage()))
+print('{:6.4f} A'.format(instr.measureCurrent()))
 
 # change voltage output to 2.7V
-rigol.setVoltage(2.7)
+instr.setVoltage(2.7)
 
 # turn off the channel
-rigol.outputOff()
+instr.outputOff()
 
 # return to LOCAL mode
-rigol.setLocal()
+instr.setLocal()
 
-rigol.close()
+instr.close()
 ```
 
 ## Taking it Further
 This implements a small subset of available commands.
 
-For information on what is possible for the Rigol DP8xx, see the
-[Rigol DP800 Programming Guide](http://beyondmeasure.rigoltech.com/acton/attachment/1579/f-03a1/1/-/-/-/-/DP800%20Programming%20Guide.pdf)
+For information on what is possible for the HP/Agilent/Keysight MSO-X/DSO-X
+3000A, see the
+[Keysight InfiniiVision
+3000 X-Series Oscilloscopes Programming Guide](https://www.keysight.com/upload/cmc_upload/All/3000_series_prog_guide.pdf)
 
-For informatio non what is possible for the Aim TTi PL-P power
-supplies, see the [New PL & PL-P Series Instruction Manual](http://resources.aimtti.com/manuals/New_PL+PL-P_Series_Instruction_Manual-Iss18.pdf)
-
-For what is possible with general power supplies that adhere to the
-IEEE 488 SCPI specification, like the Rigol DP8xx, see the
+For what is possible with general instruments that adhere to the
+IEEE 488 SCPI specification, like the MSO-X 3000A, see the
 [SCPI 1999 Specification](http://www.ivifoundation.org/docs/scpi-99.pdf)
 and the
 [SCPI Wikipedia](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) entry.

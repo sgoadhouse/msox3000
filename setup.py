@@ -14,17 +14,17 @@ except(IOError, ImportError):
     long_description = open('README.md').read()
 
 
-setup(name="dcps", 
-      version='0.4.2',
-      description='Control of DC Power Supplies through python',
+setup(name="msox3000", 
+      version='0.1',
+      description='Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope through python via PyVisa',
       long_description=long_description,
-      url='https://github.com/sgoadhouse/dcps',
+      url='https://github.com/sgoadhouse/msox3000',
       author='Stephen Goadhouse', 
       author_email="sgoadhouse@virginia.edu",
       maintainer='Stephen Goadhouse',
       maintainer_email="sgoadhouse@virginia.edu",
       license='MIT',
-      keywords=['Rigol', 'DP800', 'DP832A', 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
+      keywords=['HP', 'Agilent', 'Keysight', 'MSO3000', 'MSOX3000', 'DSO3000', 'DSOX3000' 'PyVISA', 'VISA', 'SCPI', 'INSTRUMENT'],
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -38,7 +38,7 @@ setup(name="dcps",
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'], 
      install_requires=['pyvisa', 'pyvisa-py'],
-     packages=["dcps"],
+     packages=["msox3000"],
      include_package_data=True,
      zip_safe=False
 )

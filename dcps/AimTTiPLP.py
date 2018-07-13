@@ -51,10 +51,11 @@ class AimTTiPLP(SCPI):
     only minimally adhere to the command standards.
     """
 
-    def __init__(self, resource):
+    def __init__(self, resource, wait=1.0):
         """Init the class with the instruments resource string
 
         resource - resource string or VISA descriptor, like TCPIP0::192.168.1.100::9221::SOCKET 
+        wait     - float that gives the default number of seconds to wait after sending each command
 
         NOTE: According to the documentation for this power supply, the
         resource string when using the Ethernet access method must look
@@ -63,7 +64,7 @@ class AimTTiPLP(SCPI):
         inclusion of the 9221 port number and SOCKET keyword are
         apparently mandatory for these power supplies.
         """
-        super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=1,
+        super(AimTTiPLP, self).__init__(resource, max_chan=3, wait=wait,
                                         cmd_prefix='',
                                         read_termination='\n',
                                         write_termination='\r\n')

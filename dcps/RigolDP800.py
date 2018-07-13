@@ -42,12 +42,13 @@ import visa
 class RigolDP800(SCPI):
     """Basic class for controlling and accessing a Rigol DP8xx Power Supply"""
 
-    def __init__(self, resource):
+    def __init__(self, resource, wait=1.0):
         """Init the class with the instruments resource string
 
         resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
+        wait     - float that gives the default number of seconds to wait after sending each command
         """
-        super(RigolDP800, self).__init__(resource, max_chan=3, wait=1, cmd_prefix=':')
+        super(RigolDP800, self).__init__(resource, max_chan=3, wait=wait, cmd_prefix=':')
 
     
 

@@ -58,8 +58,8 @@ class MSOX3000(SCPI):
     def hardcopy(self, filename):
         """ Download the screen image to the given filename. """
 
-        self._instWrite(":HARDcopy:INKSaver OFF")
-        scrImage = self._instWriteIEEEBlock(":DISPlay:DATA? PNG, COLor")
+        self._instWrite("HARDcopy:INKSaver OFF")
+        scrImage = self._instQueryIEEEBlock("DISPlay:DATA? PNG, COLor")
 
         # Save display data values to file.
         f = open(filename, "wb")

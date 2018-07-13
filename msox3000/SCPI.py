@@ -73,7 +73,13 @@ class SCPI(object):
                                             read_termination=self._read_termination,
                                             write_termination=self._write_termination)
         self._inst.timeout = self._timeout
-        self._inst.clear()
+
+        # Keysight recommends using clear() but it is currently not implemented in pyvisa-py v0.2
+        #@@@#self._inst.clear()
+        #
+        # Instead, send a *CLS system command to at least clear the command
+        # handler (error queues and such)
+        self.clear()
 
     def close(self):
         """Close the VISA connection"""
@@ -90,19 +96,23 @@ class SCPI(object):
                                  format(channel, 1, self._max_chan))
         self._curr_chan = value
 
-    def _instQuery(self, queryStr):
+    def _instQuery(self, queryStr, checkErrors=True):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERY:",queryStr)
         result = self._inst.query(queryStr)
-        self.checkInstErrors(queryStr)
+        if checkErrors:
+            self.checkInstErrors(queryStr)
         return result
         
-    def _instWrite(self, writeStr):
+    def _instWrite(self, writeStr, checkErrors=True):
         if (writeStr[0] != '*'):
             writeStr = self._prefix + writeStr
         #print("WRITE:",writeStr)
-        return self._inst.write(writeStr)
+        result = self._inst.write(writeStr)
+        if checkErrors:
+            self.checkInstErrors(writeStr)
+        return result
         
     def _chStr(self, channel):
         """return the channel string given the channel number and using the format CHx"""
@@ -144,25 +154,29 @@ class SCPI(object):
     # =========================================================
     def checkInstErrors(self, commandStr):
 
+        errors = False
         while True:
-            error_string = self._instQuery(":SYSTem:ERRor?")
+            # checkErrors=False prevents infinite recursion!
+            error_string = self._instQuery("SYSTem:ERRor?", checkErrors=False)
+            error_string = error_string.strip()  # remove trailing and leading whitespace
             if error_string: # If there is an error string value.
                 if error_string.find("+0,", 0, 3) == -1:
                     # Not "No error".
-                    print("ERROR: {}, command: '{}'".format(error_string, commandStr)
+                    print("ERROR: {}, command: '{}'".format(error_string, commandStr))
                     #print "Exited because of error."
                     #sys.exit(1)
-                    return True           # indicate there was an error
+                    errors = True           # indicate there was an error
                 else: # "No error"
-                    #break
-                    return False          # NO ERROR!
+                    break
 
             else: # :SYSTem:ERRor? should always return string.
-                print("ERROR: :SYSTem:ERRor? returned nothing, command: '{}'").format(commandStr)
+                print("ERROR: :SYSTem:ERRor? returned nothing, command: '{}'".format(commandStr))
                 #print "Exited because of error."
                 #sys.exit(1)
+                errors = True # if unexpected response, then set as Error
+                break
 
-        return True           # indicate there was an error
+        return errors           # indicate if there was an error
 
     # =========================================================
     # Based on do_query_ieee_block() from the MSO-X 3000 Programming
@@ -191,6 +205,10 @@ class SCPI(object):
     def idn(self):
         """Return response to *IDN? message"""
         return self._instQuery('*IDN?')
+
+    def clear(self):
+        """Sends a *CLS message to clear status and error queues"""
+        return self._instWrite('*CLS')
 
     def setLocal(self):
         """Set the power supply to LOCAL mode where front panel keys work again

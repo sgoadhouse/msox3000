@@ -113,7 +113,16 @@ scope.open()
 print(scope.idn())
 
 print("Output file: %s" % fn )
-scope.hardcopy(fn)
+#@@@#scope.hardcopy(fn)
+#@@@#scope.waveform(fn+"_1.csv", 1)
+#@@@#scope.waveform(fn+"_2.csv", 2)
+#@@@#scope.waveform(fn+"_3.csv", 3)
+#@@@#scope.waveform(fn+"_4.csv", 4)
+chan = 1
+print("Ch.{}: {}V ACRMS".format(chan,scope._readDVM("ACRM",chan)))
+print("Ch.{}: {}V DC".format(chan,scope._readDVM("DC",chan)))
+print("Ch.{}: {}V DCRMS".format(chan,scope._readDVM("DCRM",chan)))
+print("Ch.{}: {}Hz FREQ".format(chan,scope._readDVM("FREQ",chan)))
 print('Done')
 
 scope.close()

@@ -44,6 +44,7 @@ class SCPI(object):
 
     def __init__(self, resource, max_chan=1, wait=0,
                      cmd_prefix = '',
+                     read_strip = '',
                      read_termination = '',
                      write_termination = '',
                      timeout = 15000):
@@ -53,7 +54,8 @@ class SCPI(object):
         max_chan   - number of channels in power supply
         wait       - float that gives the default number of seconds to wait after sending each command
         cmd_prefix - optional command prefix (ie. some instruments require a ':' prefix)
-        read_termination - optional read_termination parameter to pass to open_resource()
+        read_strip        - optional read_strip parameter used to strip any returned termination characters
+        read_termination  - optional read_termination parameter to pass to open_resource()
         write_termination - optional write_termination parameter to pass to open_resource()
         """
         self._resource = resource
@@ -61,6 +63,7 @@ class SCPI(object):
         self._wait = wait
         self._prefix = cmd_prefix
         self._curr_chan = 1                      # set the current channel to the first one
+        self._read_strip = read_strip
         self._read_termination = read_termination
         self._write_termination = write_termination
         self._timeout = timeout
@@ -103,8 +106,11 @@ class SCPI(object):
         result = self._inst.query(queryStr)
         if checkErrors:
             self.checkInstErrors(queryStr)
-        return result
-        
+        return result.rstrip(self._read_strip)
+
+    def _instQueryNumber(self, queryStr, checkErrors=True):
+        return float(self._instQuery(queryStr, checkErrors))
+
     def _instWrite(self, writeStr, checkErrors=True):
         if (writeStr[0] != '*'):
             writeStr = self._prefix + writeStr
@@ -124,6 +130,11 @@ class SCPI(object):
 
         return '{}'.format(channel)
     
+    def _channelStr(self, channel):
+        """return the channel string given the channel number and using the format CHANnelx"""
+
+        return 'CHANnel{}'.format(channel)
+    
     def _onORoff(self, str):
         """Check if string says it is ON or OFF and return True if ON
         and False if OFF
@@ -135,6 +146,29 @@ class SCPI(object):
             return True
         else:
             return False
+        
+    def _1OR0(self, str):
+        """Check if string says it is 1 or 0 and return True if 1
+        and False if 0
+        """
+
+        # Only check first character so do not need to deal with
+        # trailing whitespace and such
+        if str[:1] == '1':
+            return True
+        else:
+            return False
+        
+    def _chanNumber(self, str):
+        """Decode the response as a channel number and return it. Return 0 if string does not decode properly.
+        """
+
+        # Only check first character so do not need to deal with
+        # trailing whitespace and such
+        if str[:4] == 'CHAN':
+            return int(str[4])
+        else:
+            return 0
         
     def _wait(self):
         """Wait until all preceeding commands complete"""
@@ -189,6 +223,18 @@ class SCPI(object):
         result = self._inst.query_binary_values(queryStr, datatype='s')
         self.checkInstErrors(queryStr)
         return result[0]
+            
+    # =========================================================
+    # Based on code from the MSO-X 3000 Programming
+    # Guide and modified to work within this class ...
+    # =========================================================
+    def _instQueryNumbers(self, queryStr):
+        if (queryStr[0] != '*'):
+            queryStr = self._prefix + queryStr
+        #print("QUERYNumbers:",queryStr)
+        result = self._inst.query_ascii_values(queryStr, converter='f', separator=',')
+        self.checkInstErrors(queryStr)
+        return result
             
     # =========================================================
     # Based on do_command_ieee_block() from the MSO-X 3000 Programming
@@ -349,8 +395,8 @@ class SCPI(object):
             self.channel = channel
                     
         str = 'INSTrument:NSELect {}; MEASure:VOLTage:DC?'.format(self.channel)
-        val = self._instQuery(str)
-        return float(val)
+        val = self._instQueryNumber(str)
+        return val
     
     
 

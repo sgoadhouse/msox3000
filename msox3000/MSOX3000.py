@@ -43,13 +43,15 @@ import visa
 class MSOX3000(SCPI):
     """Basic class for controlling and accessing a HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope"""
 
+    maxChannel = 4
+    
     def __init__(self, resource, wait=0):
         """Init the class with the instruments resource string
 
         resource - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
         wait     - float that gives the default number of seconds to wait after sending each command
         """
-        super(MSOX3000, self).__init__(resource, max_chan=4, wait=wait,
+        super(MSOX3000, self).__init__(resource, max_chan=MSOX3000.maxChannel, wait=wait,
                                        cmd_prefix=':',
                                        read_strip='\n',
                                        read_termination='',
@@ -71,8 +73,10 @@ class MSOX3000(SCPI):
         f.write(oscopeSetup)
         f.close()
 
-        print('Oscilloscope Setup bytes saved: {} to "{}"'.format(len(oscopeSetup),filename))
+        #print('Oscilloscope Setup bytes saved: {} to "{}"'.format(len(oscopeSetup),filename))
 
+        # Return number of bytes saved to file
+        return len(oscopeSetup)
 
     # =========================================================
     # Based on the loading a previous setup example from the MSO-X 3000 Programming
@@ -86,10 +90,13 @@ class MSOX3000(SCPI):
         oscopeSetup = f.read()
         f.close()
 
-        print('Oscilloscope Setup bytes loaded: {} from "{}"'.format(len(oscopeSetup),filename))
+        #print('Oscilloscope Setup bytes loaded: {} from "{}"'.format(len(oscopeSetup),filename))
 
         self._instWriteIEEEBlock("SYSTem:SETup ", oscopeSetup)  
 
+        # Return number of bytes saved to file
+        return len(oscopeSetup)
+        
 
     def setupAutoscale(self, channel=None):
         """ Autoscale desired channel. """
@@ -855,7 +862,7 @@ class MSOX3000(SCPI):
     # Based on the Waveform data download example from the MSO-X 3000 Programming
     # Guide and modified to work within this class ...
     # =========================================================
-    def waveform(self, filename, channel=None):
+    def waveform(self, filename, channel=None, points=None):
         """ Download the Waveform Data of a particular Channel and saved to the given filename as a CSV file. """
 
         DEBUG = False
@@ -868,17 +875,17 @@ class MSOX3000(SCPI):
         
         # Download waveform data.
         # Set the waveform points mode.
-        self._instWrite("WAVeform:POINts:MODE RAW")
+        self._instWrite("WAVeform:POINts:MODE MAX")
         if DEBUG:
             qresult = self._instQuery("WAVeform:POINts:MODE?")
             print( "Waveform points mode: {}".format(qresult) )
 
-        # Set the number of waveform points to fetch - make this a parameter perhaps
-        #@@@#self._instWrite("WAVeform:POINts 10240")
-        #@@@#self._instWrite("WAVeform:POINts 62500")
-        if DEBUG:
-            qresult = self._instQuery("WAVeform:POINts?")
-            print( "Waveform points available: {}".format(qresult) )
+        # Set the number of waveform points to fetch, if it was passed in
+        if (points is not None):
+            self._instWrite("WAVeform:POINts {}".format(points))
+            if DEBUG:
+                qresult = self._instQuery("WAVeform:POINts?")
+                print( "Waveform points available: {}".format(qresult) )
 
         # Set the waveform source.
         self._instWrite("WAVeform:SOURce {}".format(self._channelStr(self.channel)))
@@ -957,7 +964,8 @@ class MSOX3000(SCPI):
         # Get the waveform data.
         data_bytes = self._instQueryIEEEBlock("WAVeform:DATA?")
         nLength = len(data_bytes)
-        print( "Number of data values: {:d}".format(nLength) )
+        if (DEBUG):
+            print( "Number of data values: {:d}".format(nLength) )
 
         # Open file for output.
         myFile = open(filename, 'w')
@@ -971,9 +979,11 @@ class MSOX3000(SCPI):
                 voltage = (data_bytes[i] - y_reference) * y_increment + y_origin
                 writer.writerow([time_val, voltage])
 
-        print( "Waveform format BYTE data written to {}.".format(filename) )
+        if (DEBUG):
+            print( "Waveform format BYTE data written to {}.".format(filename) )
 
-
+        # return number of entries written
+        return nLength
         
 if __name__ == '__main__':
     import argparse

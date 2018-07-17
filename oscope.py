@@ -46,152 +46,219 @@ from __future__ import print_function
 import os
 import random
 import sys
+import argparse
+
+from datetime import datetime
+from msox3000 import MSOX3000
+
 
 # Set to the IP address of the oscilloscope
 #@@@#agilent_msox_3034a = 'TCPIP0::172.28.36.206::INSTR'
 agilent_msox_3034a = 'TCPIP0::mx3034a-sdg1.phys.virginia.edu::INSTR'
 
-import argparse
-parser = argparse.ArgumentParser(description='Access Agilent/KeySight MSO3034A scope')
-parser.add_argument('--hardcopy', '-y', metavar='outfile.png', help='grab hardcopy of scope screen and output to named file as a PNG image')
-parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), default=(1, 'outfile.csv'), help='grab waveform data of channel and output to named file as a CSV file')
+def handleFilename(fname, ext, unique=True, timestamp=True):
 
-args = parser.parse_args()
+    # If extension exists in fname, strip it and add it back later
+    # after handle versioning
+    ext = '.' + ext                       # don't pass in extension with leading '.'
+    if (fname.endswith(ext)):
+        fname = fname[:-len(ext)]
 
-#if (args.g or args.f or args.j) and not args.ofile:
-#    print 'ERROR: If use -g or -f or -j, must supply ofile'
-#    sys.exit()
-
-sys.exit()
-
-fn_ext = ".png"
-pn = os.environ['HOME'] + "/Downloads"
-fn = pn + "/" + args.ofile[0]
-
-# If given filename exists, try to find a unique one
-num = 0
-suffix = ''
-while(os.path.isfile(fn + suffix + fn_ext)):
-    num += 1
-    suffix = "-{}".format(num)
-
-fn += suffix + fn_ext
-
-from msox3000 import MSOX3000
-
-## Connect to the Oscilloscope
-scope = MSOX3000(agilent_msox_3034a)
-scope.open()
-
-print(scope.idn())
-
-print("Output file: %s" % fn )
-#@@@#scope.hardcopy(fn)
-#@@@#scope.waveform(fn+"_1.csv", 1)
-#@@@#scope.waveform(fn+"_2.csv", 2)
-#@@@#scope.waveform(fn+"_3.csv", 3)
-#@@@#scope.waveform(fn+"_4.csv", 4)
-
-#chan = 1
-#print("Ch.{}: {}V ACRMS".format(chan,scope.measureDVMacrms(chan)))
-#print("Ch.{}: {}V DC".format(chan,scope.measureDVMdc(chan)))
-#print("Ch.{}: {}V DCRMS".format(chan,scope.measureDVMdcrms(chan)))
-#print("Ch.{}: {}Hz FREQ".format(chan,scope.measureDVMfreq(chan)))
-
-#scope.setupSave(fn+".stp")
-scope.setupSave(fn)
-
-#@@@#scope.setupAutoscale(1)
-#@@@#scope.setupAutoscale(2)
-#@@@#scope.setupAutoscale(3)
-
-#scope.setupLoad(fn+".stp")
-
-if False:
-    wait = 0.5 # just so can see if happen
-    for chan in range(1,5):
-        scope.outputOn(chan,wait)
-
-        for chanEn in range(1,5):
-            if (scope.isOutputOn(chanEn)):
-                print("Channel {} is ON.".format(chanEn))
-            else:
-                print("Channel {} is off.".format(chanEn))
-        print()
+    # Make sure filename has no path components, nor ends in a '/'
+    if (fname.endswith('/')):
+        fname = fname[:-1]
         
-    for chan in range(1,5):
-        scope.outputOff(chan,wait)
+    pn = fname.split('/')
+    fname = pn[-1]
+        
+    # Assemble full pathname so files go to ~/Downloads    if (len(pp) > 1):
+    pn = os.environ['HOME'] + "/Downloads"
+    fn = pn + "/" + fname
 
+    if (timestamp):
+        # add timestamp suffix
+        fn = fn + '-' + datetime.now().strftime("%Y%0m%0d-%0H%0M%0S")
+
+    suffix = ''
+    if (unique):
+        # If given filename exists, try to find a unique one
+        num = 0
+        while(os.path.isfile(fn + suffix + ext)):
+            num += 1
+            suffix = "-{}".format(num)
+
+    fn += suffix + ext
+
+    return fn
+
+
+
+def main():
+
+    parser = argparse.ArgumentParser(description='Access Agilent/KeySight MSO3034A scope')
+    parser.add_argument('--hardcopy', '-y', metavar='outfile.png', help='grab hardcopy of scope screen and output to named file as a PNG image')
+    parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), action='append', help='grab waveform data of channel and output to named file as a CSV file')
+    parser.add_argument('--setup_save', '-s', metavar='outfile.stp', help='save the current setup of the oscilloscope into the named file')
+    parser.add_argument('--setup_load', '-l', metavar='infile.stp', help='load the current setup of the oscilloscope from the named file')
+    parser.add_argument('--statistics', '-t', action='store_true', help='dump to the output the current displayed measurements')
+    parser.add_argument('--autoscale', '-a',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='cause selected channel to autoscale')
+    parser.add_argument('--dvm', '-d', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='measure and output the DVM readings of selected channel')
+    parser.add_argument('--measure', '-m', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='measure and output the selected channel')
+
+    args = parser.parse_args()
+
+    ## Connect to the Oscilloscope
+    scope = MSOX3000(agilent_msox_3034a)
+    scope.open()
+
+    print(scope.idn())
+
+    if (args.hardcopy):
+        fn = handleFilename(args.hardcopy, 'png')
+        
+        scope.hardcopy(fn)
+        print("Hardcopy Output file: %s" % fn )
+
+    if (args.waveform):
+        for nxt in args.waveform:
+            # check the channel
+            try:
+                channel = int(nxt[0])
+                if (channel >= 1 and channel <= MSOX3000.maxChannel):
+                    fn = handleFilename(nxt[1], 'csv')
+                    #@@@#dataLen = scope.waveform(fn, channel, points=100)
+                    dataLen = scope.waveform(fn, channel)
+                    print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
+                else:
+                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
+            except Exception:
+                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
+                        
+    if (args.dvm):
+        for lst in args.dvm:
+            chan = lst[0]
+            acrms = scope.measureDVMacrms(chan)
+            dc = scope.measureDVMdc(chan)
+            dcrms = scope.measureDVMdcrms(chan)
+            freq = scope.measureDVMfreq(chan)
+
+            if (acrms >= MSOX3000.OverRange):
+                acrms = 'INVALID '
+            if (dc >= MSOX3000.OverRange):
+                dc = 'INVALID '
+            if (dcrms >= MSOX3000.OverRange):
+                dcrms = 'INVALID '
+            if (freq >= MSOX3000.OverRange):
+                freq = 'INVALID '
+            
+            print("Ch.{}: {: 7.5f}V ACRMS".format(chan,acrms))
+            print("Ch.{}: {: 7.5f}V DC".format(chan,dc))
+            print("Ch.{}: {: 7.5f}V DCRMS".format(chan,dcrms))
+            print("Ch.{}: {}Hz FREQ".format(chan,freq))
+
+    if (args.statistics):
+        print(scope.measureStatistics())
+            
+    if (args.measure):
+        for lst in args.measure:
+            chan = lst[0]
+
+            print('\nNOTE: If returned value is >= {}, then it is to be considered INVALID'.format(MSOX3000.OverRange))
+            print('\nMeasurements for Ch. {}:'.format(chan))
+            print(scope.measureBitRate(chan))
+            print(scope.measureBurstWidth(chan))
+            print(scope.measureCounterFrequency(chan))
+            print(scope.measureFrequency(chan))
+            print(scope.measurePeriod(chan))
+            print(scope.measurePosDutyCycle(chan))
+            print(scope.measureNegDutyCycle(chan))
+            print(scope.measureFallTime(chan))
+            print(scope.measureFallEdgeCount(chan))
+            print(scope.measureFallPulseCount(chan))
+            print(scope.measureNegPulseWidth(chan))
+            print(scope.measurePosPulseWidth(chan))
+            print(scope.measureRiseTime(chan))
+            print(scope.measureRiseEdgeCount(chan))
+            print(scope.measureRisePulseCount(chan))
+            print(scope.measureOvershoot(chan))
+            print(scope.measurePreshoot(chan))
+            print()
+            print(scope.measureVoltAmplitude(chan))
+            print(scope.measureVoltTop(chan))
+            print(scope.measureVoltBase(chan))
+            print(scope.measureVoltMax(chan))
+            print(scope.measureVoltAverage(chan))
+            print(scope.measureVoltMin(chan))
+            print(scope.measureVoltPP(chan))
+            print(scope.measureVoltRMS(chan))
+
+                                    
+    if (args.setup_save):
+        fn = handleFilename(args.setup_save, 'stp')
+        
+        dataLen = scope.setupSave(fn)
+        print("Oscilloscope Setup bytes saved: {} to '{}'".format(dataLen,fn) )
+
+    if (args.setup_load):
+        fn = handleFilename(args.setup_load, 'stp', unique=False, timestamp=False)
+
+        if(not os.path.isfile(fn)):
+            print('INVALID filename "{}" - must be exact and exist!'.format(fn))
+        else:
+            dataLen = scope.setupLoad(fn)
+            print("Oscilloscope Setup bytes loaded: {} from '{}'".format(dataLen,fn) )
+
+    if (args.autoscale):
+        for chan in args.autoscale:
+            scope.setupAutoscale(chan[0])
+                                    
+    # a simple test of enabling/disabling the channels
+    if False:
+        wait = 0.5 # just so can see if happen
+        for chan in range(1,5):
+            scope.outputOn(chan,wait)
+
+            for chanEn in range(1,5):
+                if (scope.isOutputOn(chanEn)):
+                    print("Channel {} is ON.".format(chanEn))
+                else:
+                    print("Channel {} is off.".format(chanEn))
+            print()
+
+        for chan in range(1,5):
+            scope.outputOff(chan,wait)
+
+            for chanEn in range(1,5):
+                if (scope.isOutputOn(chanEn)):
+                    print("Channel {} is ON.".format(chanEn))
+                else:
+                    print("Channel {} is off.".format(chanEn))
+            print()
+
+        scope.outputOnAll(wait)
         for chanEn in range(1,5):
             if (scope.isOutputOn(chanEn)):
                 print("Channel {} is ON.".format(chanEn))
             else:
                 print("Channel {} is off.".format(chanEn))
         print()
-                
-    scope.outputOnAll(wait)
-    for chanEn in range(1,5):
-        if (scope.isOutputOn(chanEn)):
-            print("Channel {} is ON.".format(chanEn))
-        else:
-            print("Channel {} is off.".format(chanEn))
-    print()
 
-    scope.outputOffAll(wait)
-    for chanEn in range(1,5):
-        if (scope.isOutputOn(chanEn)):
-            print("Channel {} is ON.".format(chanEn))
-        else:
-            print("Channel {} is off.".format(chanEn))
-    print()
+        scope.outputOffAll(wait)
+        for chanEn in range(1,5):
+            if (scope.isOutputOn(chanEn)):
+                print("Channel {} is ON.".format(chanEn))
+            else:
+                print("Channel {} is off.".format(chanEn))
+        print()
 
 
-chan = 3
-#if (not scope.isOutputOn(chan)):
-#    scope.outputOn(chan)    
-#print(scope.measureVoltage(1,install=False))
-#print(scope.measureVoltageMax(1,install=False))
-#print(scope.measureVoltage(2))
-#print(scope.measureVoltageMax(2,install=False))
 
-#scope.measureStatistics()
+    print('Done')
+    scope.close()
 
-if False:
-    print(scope.measureBitRate(4))
-    print(scope.measureBurstWidth(4))
-    print(scope.measureCounterFrequency(4))
-    print(scope.measureFrequency(4))
-    print(scope.measurePeriod(4))
-    print(scope.measurePosDutyCycle(4))
-    print(scope.measureNegDutyCycle(4))
-    print(scope.measureFallTime(4))
-    print(scope.measureFallEdgeCount(4))
-    print(scope.measureFallPulseCount(4))
-    print(scope.measureNegPulseWidth(4))
-    print(scope.measurePosPulseWidth(4))
-    print(scope.measureRiseTime(4))
-    print(scope.measureRiseEdgeCount(4))
-    print(scope.measureRisePulseCount(4))
-    print(scope.measureOvershoot(4))
-    print(scope.measurePreshoot(4))
-    print()
-    print(scope.measureVoltAmplitude(1))
-    print(scope.measureVoltAmplitude(4))
-    print(scope.measureVoltTop(1))
-    print(scope.measureVoltTop(4))
-    print(scope.measureVoltBase(1))
-    print(scope.measureVoltBase(4))
-    print(scope.measureVoltMax(1))
-    print(scope.measureVoltMax(4))
-    print(scope.measureVoltAverage(1))
-    print(scope.measureVoltAverage(4))
-    print(scope.measureVoltMin(1))
-    print(scope.measureVoltMin(4))
-    print(scope.measureVoltPP(1))
-    print(scope.measureVoltPP(4))
-    print(scope.measureVoltRMS(1))
-    print(scope.measureVoltRMS(4))
 
-print('Done')
-
-scope.close()
+if __name__ == '__main__':
+    main()

@@ -46,6 +46,7 @@ from __future__ import print_function
 import os
 import random
 import sys
+from time import sleep
 
 # Set to the IP address of the oscilloscope
 #@@@#agilent_msox_3034a = 'TCPIP0::172.28.36.206::INSTR'
@@ -65,45 +66,6 @@ while os.path.isfile(fn + fn_ext):
 
 fn += fn_ext
 
-## IEEE Block handlers copied from python IVI: https://github.com/python-ivi/python-ivi/blob/master/ivi/ivi.py
-##
-## (NOTE: no longer needed since using similar functionality within PyVISA
-#
-def build_ieee_block(data):
-    "Build IEEE block"
-    # IEEE block binary data is prefixed with #lnnnnnnnn
-    # where l is length of n and n is the
-    # length of the data
-    # ex: #800002000 prefixes 2000 data bytes
-    return str('#8%08d' % len(data)).encode('utf-8') + data
-
-    
-def decode_ieee_block(data):
-    "Decode IEEE block"
-    # IEEE block binary data is prefixed with #lnnnnnnnn
-    # where l is length of n and n is the
-    # length of the data
-    # ex: #800002000 prefixes 2000 data bytes
-    if len(data) == 0:
-        return b''
-    
-    ind = 0
-    c = '#'.encode('utf-8')
-    while data[ind:ind+1] != c:
-        ind += 1
-    
-    ind += 1
-    l = int(data[ind:ind+1])
-    ind += 1
-    
-    if (l > 0):
-        num = int(data[ind:ind+l].decode('utf-8'))
-        ind += l
-        
-        return data[ind:ind+num]
-    else:
-        return data[ind:]
-
 from msox3000 import MSOX3000
 
 ## Connect to the Power Supply with default wait time of 100ms
@@ -118,11 +80,106 @@ print("Output file: %s" % fn )
 #@@@#scope.waveform(fn+"_2.csv", 2)
 #@@@#scope.waveform(fn+"_3.csv", 3)
 #@@@#scope.waveform(fn+"_4.csv", 4)
-chan = 1
-print("Ch.{}: {}V ACRMS".format(chan,scope._readDVM("ACRM",chan)))
-print("Ch.{}: {}V DC".format(chan,scope._readDVM("DC",chan)))
-print("Ch.{}: {}V DCRMS".format(chan,scope._readDVM("DCRM",chan)))
-print("Ch.{}: {}Hz FREQ".format(chan,scope._readDVM("FREQ",chan)))
+
+#chan = 1
+#print("Ch.{}: {}V ACRMS".format(chan,scope.measureDVMacrms(chan)))
+#print("Ch.{}: {}V DC".format(chan,scope.measureDVMdc(chan)))
+#print("Ch.{}: {}V DCRMS".format(chan,scope.measureDVMdcrms(chan)))
+#print("Ch.{}: {}Hz FREQ".format(chan,scope.measureDVMfreq(chan)))
+
+#scope.setupSave(fn+".stp")
+
+#@@@#scope.setupAutoscale(1)
+#@@@#scope.setupAutoscale(2)
+#@@@#scope.setupAutoscale(3)
+
+#scope.setupLoad(fn+".stp")
+
+if False:
+    wait = 0.5 # just so can see if happen
+    for chan in range(1,5):
+        scope.outputOn(chan,wait)
+
+        for chanEn in range(1,5):
+            if (scope.isOutputOn(chanEn)):
+                print("Channel {} is ON.".format(chanEn))
+            else:
+                print("Channel {} is off.".format(chanEn))
+        print()
+        
+    for chan in range(1,5):
+        scope.outputOff(chan,wait)
+
+        for chanEn in range(1,5):
+            if (scope.isOutputOn(chanEn)):
+                print("Channel {} is ON.".format(chanEn))
+            else:
+                print("Channel {} is off.".format(chanEn))
+        print()
+                
+    scope.outputOnAll(wait)
+    for chanEn in range(1,5):
+        if (scope.isOutputOn(chanEn)):
+            print("Channel {} is ON.".format(chanEn))
+        else:
+            print("Channel {} is off.".format(chanEn))
+    print()
+
+    scope.outputOffAll(wait)
+    for chanEn in range(1,5):
+        if (scope.isOutputOn(chanEn)):
+            print("Channel {} is ON.".format(chanEn))
+        else:
+            print("Channel {} is off.".format(chanEn))
+    print()
+
+
+chan = 3
+#if (not scope.isOutputOn(chan)):
+#    scope.outputOn(chan)    
+#print(scope.measureVoltage(1,install=False))
+#print(scope.measureVoltageMax(1,install=False))
+#print(scope.measureVoltage(2))
+#print(scope.measureVoltageMax(2,install=False))
+
+#scope.measureStatistics()
+
+if False:
+    print(scope.measureBitRate(4))
+    print(scope.measureBurstWidth(4))
+    print(scope.measureCounterFrequency(4))
+    print(scope.measureFrequency(4))
+    print(scope.measurePeriod(4))
+    print(scope.measurePosDutyCycle(4))
+    print(scope.measureNegDutyCycle(4))
+    print(scope.measureFallTime(4))
+    print(scope.measureFallEdgeCount(4))
+    print(scope.measureFallPulseCount(4))
+    print(scope.measureNegPulseWidth(4))
+    print(scope.measurePosPulseWidth(4))
+    print(scope.measureRiseTime(4))
+    print(scope.measureRiseEdgeCount(4))
+    print(scope.measureRisePulseCount(4))
+    print(scope.measureOvershoot(4))
+    print(scope.measurePreshoot(4))
+    print()
+    print(scope.measureVoltAmplitude(1))
+    print(scope.measureVoltAmplitude(4))
+    print(scope.measureVoltTop(1))
+    print(scope.measureVoltTop(4))
+    print(scope.measureVoltBase(1))
+    print(scope.measureVoltBase(4))
+    print(scope.measureVoltMax(1))
+    print(scope.measureVoltMax(4))
+    print(scope.measureVoltAverage(1))
+    print(scope.measureVoltAverage(4))
+    print(scope.measureVoltMin(1))
+    print(scope.measureVoltMin(4))
+    print(scope.measureVoltPP(1))
+    print(scope.measureVoltPP(4))
+    print(scope.measureVoltRMS(1))
+    print(scope.measureVoltRMS(4))
+
 print('Done')
 
 scope.close()

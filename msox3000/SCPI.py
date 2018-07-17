@@ -42,6 +42,9 @@ import visa
 class SCPI(object):
     """Basic class for controlling and accessing an Oscilloscope with Standard SCPI Commands"""
 
+    OverRange = +9.9E+37                  # Number which indicates Over Range
+    UnderRange = -9.9E+37                 # Number which indicates Under Range
+    
     def __init__(self, resource, max_chan=1, wait=0,
                      cmd_prefix = '',
                      read_strip = '',
@@ -244,7 +247,17 @@ class SCPI(object):
         if (writeStr[0] != '*'):
             writeStr = self._prefix + writeStr
         #print("WRITE:",writeStr)
-        result = self._inst.write_binary_values(writeStr, values, datatype='c')
+
+        result = self._inst.write_binary_values(writeStr, values, datatype='B')
+        self.checkInstErrors(writeStr)
+        return result
+        
+    def _instWriteIEEENumbers(self, writeStr, values):
+        if (writeStr[0] != '*'):
+            writeStr = self._prefix + writeStr
+        #print("WRITE:",writeStr)
+
+        result = self._inst.write_binary_values(writeStr, values, datatype='f')
         self.checkInstErrors(writeStr)
         return result
         
@@ -255,6 +268,10 @@ class SCPI(object):
     def clear(self):
         """Sends a *CLS message to clear status and error queues"""
         return self._instWrite('*CLS')
+
+    def reset(self):
+        """Sends a *RST message to reset to defaults"""
+        return self._instWrite('*RST')
 
     def setLocal(self):
         """Set the power supply to LOCAL mode where front panel keys work again
@@ -291,7 +308,7 @@ class SCPI(object):
         # no beeper to turn off, so make it do nothing
         pass
 
-    def isOutputOnOLD(self, channel=None):
+    def isOutputOn(self, channel=None):
         """Return true if the output of channel is ON, else false
         
            channel - number of the channel starting at 1
@@ -302,13 +319,12 @@ class SCPI(object):
         if channel is not None:
             self.channel = channel
             
-        # @@@str = 'OUTPut:STATe? {}'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe?'.format(self.channel)
+        str = 'STATus? {}'.format(self._channelStr(self.channel))
         ret = self._instQuery(str)
         # @@@print("1:", ret)
-        return self._onORoff(ret)
+        return self._1OR0(ret)
     
-    def outputOnOLD(self, channel=None, wait=None):
+    def outputOn(self, channel=None, wait=None):
         """Turn on the output for channel
         
            wait    - number of seconds to wait after sending command
@@ -325,12 +341,11 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},ON'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(self.channel)
+        str = 'VIEW {}'.format(self._channelStr(self.channel))
         self._instWrite(str)
-        sleep(wait)             # give some time for PS to respond
+        sleep(wait)           
     
-    def outputOffOLD(self, channel=None, wait=None):
+    def outputOff(self, channel=None, wait=None):
         """Turn off the output for channel
         
            channel - number of the channel starting at 1
@@ -346,12 +361,11 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
             
-        # @@@str = 'OUTPut:STATe {},OFF'.format(self._chStr(self.channel))
-        str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(self.channel)
+        str = 'BLANK {}'.format(self._channelStr(self.channel))
         self._instWrite(str)
-        sleep(wait)             # give some time for PS to respond
+        sleep(wait)            
     
-    def outputOnAllOLD(self, wait=None):
+    def outputOnAll(self, wait=None):
         """Turn on the output for ALL channels
         
         """
@@ -362,12 +376,12 @@ class SCPI(object):
             wait = self._wait
 
         for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe ON'.format(chan)
+            str = 'VIEW {}'.format(self._channelStr(chan))
             self._instWrite(str)
             
-        sleep(wait)             # give some time for PS to respond
+        sleep(wait)
     
-    def outputOffAllOLD(self, wait=None):
+    def outputOffAll(self, wait=None):
         """Turn off the output for ALL channels
         
         """
@@ -377,12 +391,16 @@ class SCPI(object):
         if wait is None:
             wait = self._wait
 
-        for chan in range(1,self._max_chan+1):
-            str = 'INSTrument:NSELect {}; OUTPut:STATe OFF'.format(chan)
-            self._instWrite(str)
+        #for chan in range(1,self._max_chan+1):
+        #    str = 'BLANK {}'.format(self._channelStr(chan))
+        #    self._instWrite(str)
+
+        # Blank without a parameter turns off ALL sources
+        str = 'BLANK'
+        self._instWrite(str)
             
         sleep(wait)             # give some time for PS to respond
-    
+        
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
         

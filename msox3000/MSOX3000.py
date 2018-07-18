@@ -1058,22 +1058,27 @@ if __name__ == '__main__':
     instr = MSOX3000(resource)
     instr.open()
 
-    if not instr.isOutputOn(args.chan):
+    # set the channel (can pass channel to each method or just set it
+    # once and it becomes the default for all following calls)
+    instr.channel = args.chan
+
+    if not instr.isOutputOn():
         instr.outputOn()
 
-    # Install measurements to display in statistics display and also return their current values
+    # Install measurements to display in statistics display and also
+    # return their current values
     print('Ch. {} Settings: {:6.4e} V  PW {:6.4e} s\n'.
-              format(args.chan, instr.measureVoltAverage(args.chan, install=True),
-                         instr.measurePosPulseWidth(args.chan, install=True)))
+              format(instr.channel, instr.measureVoltAverage(install=True),
+                         instr.measurePosPulseWidth(install=True)))
 
     # Add an annotation to the screen before hardcopy
     instr._instWrite("DISPlay:ANN ON")
-    instr._instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',args.chan))
+    instr._instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',instr.channel))
     instr._instWrite("DISPlay:ANN:BACKground TRAN")   # transparent background - can also be OPAQue or INVerted
-    instr._instWrite("DISPlay:ANN:COLor CH{}".format(args.chan))
+    instr._instWrite("DISPlay:ANN:COLor CH{}".format(instr.channel))
 
     # Change label of the channel to "MySig"
-    instr._instWrite('CHAN{}:LABel "MySig"'.format(args.chan))
+    instr._instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
     instr._instWrite('DISPlay:LABel ON')
     
     # Make sure the statistics display is showing
@@ -1084,7 +1089,7 @@ if __name__ == '__main__':
     instr.hardcopy('outfile.png')
 
     # Change label back to the default
-    instr._instWrite('CHAN{}:LABel "{}"'.format(args.chan, args.chan))
+    instr._instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
     instr._instWrite('DISPlay:LABel OFF')
     
     # Turn off the annotation
@@ -1092,7 +1097,7 @@ if __name__ == '__main__':
     
     ## Read ALL available measurements from channel, without installing
     ## to statistics display, with units
-    print('\nMeasurements for Ch. {}:'.format(args.chan))
+    print('\nMeasurements for Ch. {}:'.format(instr.channel))
     measurements = ['Bit Rate',
                     'Burst Width',
                     'Counter Freq',
@@ -1129,7 +1134,7 @@ if __name__ == '__main__':
             # appropriate method to read the measurement. Also, using
             # the same measurement name, pass it to the polish() method
             # to format the data with units and SI suffix.
-            print('{: <24} {:>12.6}'.format(meas,instr.polish(MSOX3000.measureTbl[meas][1](instr, args.chan), meas)))
+            print('{: <24} {:>12.6}'.format(meas,instr.polish(MSOX3000.measureTbl[meas][1](instr), meas)))
         
     ## turn off the channel
     instr.outputOff()

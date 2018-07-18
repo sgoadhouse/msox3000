@@ -43,7 +43,8 @@ pip install msox3000
 ## Requirements
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
 * [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
-* [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/)
+* [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/) 
+* [quantiphy 2.3.0](http://quantiphy.readthedocs.io/en/stable/) 
 
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA driver.
@@ -71,23 +72,46 @@ instr = MSOX3000(resource)
 instr.open()
 
 # set to channel 1
+#
+# NOTE: can pass channel to each method or just set it
+# once and it becomes the default for all following calls. If pass the
+# channel to a Class method call, it will become the default for
+# following method calls.
 instr.channel = 1
 
-# Query the voltage/current limits of the power supply
-print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-         format(instr.channel, instr.queryVoltage(),
-                    instr.queryCurrent()))
+# Enable output of channel, if it is not already enabled
+if not instr.isOutputOn():
+    instr.outputOn()
 
-# Enable output of channel
-instr.outputOn()
+# Install measurements to display in statistics display and also
+# return their current values here
+print('Ch. {} Settings: {:6.4e} V  PW {:6.4e} s\n'.
+          format(instr.channel, instr.measureVoltAverage(install=True),
+                     instr.measurePosPulseWidth(install=True)))
 
-# Measure actual voltage and current
-print('{:6.4f} V'.format(instr.measureVoltage()))
-print('{:6.4f} A'.format(instr.measureCurrent()))
+# Add an annotation to the screen before hardcopy
+instr.\_instWrite("DISPlay:ANN ON")
+instr.\_instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',instr.channel))
+instr.\_instWrite("DISPlay:ANN:COLor CH{}".format(instr.channel))
 
-# change voltage output to 2.7V
-instr.setVoltage(2.7)
+# Change label of the channel to "MySig"
+instr.\_instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
+instr.\_instWrite('DISPlay:LABel ON')
 
+# Make sure the statistics display is showing
+instr.\_instWrite("SYSTem:MENU MEASure")
+instr.\_instWrite("MEASure:STATistics:DISPlay ON")
+
+## Save a hardcopy of the screen to file 'outfile.png'
+instr.hardcopy('outfile.png')
+
+# Change label back to the default
+instr.\_instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
+instr.\_instWrite('DISPlay:LABel OFF')
+
+# Turn off the annotation
+instr.\_instWrite("DISPlay:ANN OFF")
+    
 # turn off the channel
 instr.outputOff()
 

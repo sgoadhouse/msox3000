@@ -32,7 +32,7 @@ variable PYTHONPATH or even add the path to it at the start of your
 python script. Use your favorite web search engine to find out more
 details.
 
-Even better, msox3000 will eventually be on PyPi. Once it is there,
+Even better, msox3000 is on PyPi. So
 you can simply use the following and the required depedancies should
 get installed for you:
 
@@ -90,27 +90,27 @@ print('Ch. {} Settings: {:6.4e} V  PW {:6.4e} s\n'.
                      instr.measurePosPulseWidth(install=True)))
 
 # Add an annotation to the screen before hardcopy
-instr.\_instWrite("DISPlay:ANN ON")
-instr.\_instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',instr.channel))
-instr.\_instWrite("DISPlay:ANN:COLor CH{}".format(instr.channel))
+instr._instWrite("DISPlay:ANN ON")
+instr._instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',instr.channel))
+instr._instWrite("DISPlay:ANN:COLor CH{}".format(instr.channel))
 
 # Change label of the channel to "MySig"
-instr.\_instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
-instr.\_instWrite('DISPlay:LABel ON')
+instr._instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
+instr._instWrite('DISPlay:LABel ON')
 
 # Make sure the statistics display is showing
-instr.\_instWrite("SYSTem:MENU MEASure")
-instr.\_instWrite("MEASure:STATistics:DISPlay ON")
+instr._instWrite("SYSTem:MENU MEASure")
+instr._instWrite("MEASure:STATistics:DISPlay ON")
 
 ## Save a hardcopy of the screen to file 'outfile.png'
 instr.hardcopy('outfile.png')
 
 # Change label back to the default
-instr.\_instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
-instr.\_instWrite('DISPlay:LABel OFF')
+instr._instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
+instr._instWrite('DISPlay:LABel OFF')
 
 # Turn off the annotation
-instr.\_instWrite("DISPlay:ANN OFF")
+instr._instWrite("DISPlay:ANN OFF")
     
 # turn off the channel
 instr.outputOff()

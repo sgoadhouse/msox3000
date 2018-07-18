@@ -51,10 +51,8 @@ import argparse
 from datetime import datetime
 from msox3000 import MSOX3000
 
-
 # Set to the IP address of the oscilloscope
-#@@@#agilent_msox_3034a = 'TCPIP0::172.28.36.206::INSTR'
-agilent_msox_3034a = 'TCPIP0::mx3034a-sdg1.phys.virginia.edu::INSTR'
+agilent_msox_3034a = os.environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
 
 def handleFilename(fname, ext, unique=True, timestamp=True):
 
@@ -90,7 +88,6 @@ def handleFilename(fname, ext, unique=True, timestamp=True):
     fn += suffix + ext
 
     return fn
-
 
 
 def main():
@@ -129,7 +126,6 @@ def main():
                 channel = int(nxt[0])
                 if (channel >= 1 and channel <= MSOX3000.maxChannel):
                     fn = handleFilename(nxt[1], 'csv')
-                    #@@@#dataLen = scope.waveform(fn, channel, points=100)
                     dataLen = scope.waveform(fn, channel)
                     print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
                 else:
@@ -160,41 +156,67 @@ def main():
             print("Ch.{}: {}Hz FREQ".format(chan,freq))
 
     if (args.statistics):
-        print(scope.measureStatistics())
-            
-    if (args.measure):
+        stats = scope.measureStatistics()
+
+        print('\nNOTE: If returned value is >= {}, then it is to be considered INVALID\n'.format(MSOX3000.OverRange))
+        print('{: ^24} {: ^12} {: ^12} {: ^12} {: ^12} {: ^12} {: ^12}'.format('Measure', 'Current', 'Mean', 'Min', 'Max', 'Std Dev', 'Count'))
+        for stat in stats:
+            measure = stat['label'].split('(')[0]   # pull out the measurement name from the label (which has a '(channel)' suffix)
+            print('{: <24} {:>12.6} {:>12.6} {:>12.6} {:>12.6} {:>12.6} {:>12.1}'.format(
+                stat['label'],
+                scope.polish(stat['CURR'],measure),
+                scope.polish(stat['MIN'],measure),
+                scope.polish(stat['MAX'],measure),
+                scope.polish(stat['MEAN'],measure),
+                scope.polish(stat['STDD'],measure),
+                scope.polish(stat['COUN'])   # no units needed here
+                ))
+        print()
+        
+    if (args.measure):        
         for lst in args.measure:
             chan = lst[0]
 
             print('\nNOTE: If returned value is >= {}, then it is to be considered INVALID'.format(MSOX3000.OverRange))
             print('\nMeasurements for Ch. {}:'.format(chan))
-            print(scope.measureBitRate(chan))
-            print(scope.measureBurstWidth(chan))
-            print(scope.measureCounterFrequency(chan))
-            print(scope.measureFrequency(chan))
-            print(scope.measurePeriod(chan))
-            print(scope.measurePosDutyCycle(chan))
-            print(scope.measureNegDutyCycle(chan))
-            print(scope.measureFallTime(chan))
-            print(scope.measureFallEdgeCount(chan))
-            print(scope.measureFallPulseCount(chan))
-            print(scope.measureNegPulseWidth(chan))
-            print(scope.measurePosPulseWidth(chan))
-            print(scope.measureRiseTime(chan))
-            print(scope.measureRiseEdgeCount(chan))
-            print(scope.measureRisePulseCount(chan))
-            print(scope.measureOvershoot(chan))
-            print(scope.measurePreshoot(chan))
-            print()
-            print(scope.measureVoltAmplitude(chan))
-            print(scope.measureVoltTop(chan))
-            print(scope.measureVoltBase(chan))
-            print(scope.measureVoltMax(chan))
-            print(scope.measureVoltAverage(chan))
-            print(scope.measureVoltMin(chan))
-            print(scope.measureVoltPP(chan))
-            print(scope.measureVoltRMS(chan))
-
+            measurements = ['Bit Rate',
+                            'Burst Width',
+                            'Counter Freq',
+                            'Frequency',
+                            'Period',
+                            'Duty',
+                            'Neg Duty',
+                            '+ Width',
+                            '- Width',
+                            'Rise Time',                            
+                            'Num Rising',
+                            'Num Pos Pulses',
+                            'Fall Time',
+                            'Num Falling',
+                            'Num Neg Pulses',
+                            'Overshoot',
+                            'Preshoot',
+                            '',
+                            'Amplitude',
+                            'Pk-Pk',
+                            'Top',
+                            'Base',
+                            'Maximum',
+                            'Minimum',
+                            'Average - Full Screen',
+                            'RMS - Full Screen',
+                           ]
+            for meas in measurements:
+                if (meas is ''):
+                    # use a blank string to put in an extra line
+                    print()
+                else:
+                    # using MSOX3000.measureTbl[] dictionary, call the
+                    # appropriate method to read the
+                    # measurement. Also, using the same measurement
+                    # name, pass it to the polish() method to format
+                    # the data with units and SI suffix.
+                    print('{: <24} {:>12.6}'.format(meas,scope.polish(MSOX3000.measureTbl[meas][1](scope, chan), meas)))
                                     
     if (args.setup_save):
         fn = handleFilename(args.setup_save, 'stp')

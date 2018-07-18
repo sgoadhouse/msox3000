@@ -33,11 +33,12 @@ from __future__ import print_function
 
 try:
     from . import SCPI
-except ValueError:
+except Exception:
     from SCPI import SCPI
     
 from time import sleep
 from datetime import datetime
+from quantiphy import Quantity
 import visa
 
 class MSOX3000(SCPI):
@@ -109,6 +110,27 @@ class MSOX3000(SCPI):
         self._instWrite("AUToscale {}".format(self._channelStr(self.channel)))
 
 
+    def polish(self, value, measure=None):
+        """ Using the QuantiPhy package, return a value that is in apparopriate Si units.
+
+        If value is >= SCPI.OverRange, then return the invalid string instead of a Quantity().
+
+        If the measure string is None, then no units are used by the SI suffix is.
+
+        """
+        
+        if (value >= SCPI.OverRange):
+            pol = '------'
+        else:
+            try:
+                pol = Quantity(value, MSOX3000.measureTbl[measure][0])
+            except KeyError:
+                # If measure is None or does not exist
+                pol = Quantity(value)
+                            
+        return pol
+    
+            
     def measureStatistics(self):
         """Returns an array of dictionaries from the current statistics window.
 
@@ -984,56 +1006,105 @@ class MSOX3000(SCPI):
 
         # return number of entries written
         return nLength
-        
+
+    ## This is a dictionary of measurement labels with their units and
+    ## method to get the data from the scope.
+    measureTbl = {
+        'Bit Rate': ['Hz', measureBitRate],
+        'Burst Width': ['s', measureBurstWidth],
+        'Counter Freq': ['Hz', measureCounterFrequency],
+        'Frequency': ['Hz', measureFrequency],
+        'Period': ['s', measurePeriod],
+        'Duty': ['%', measurePosDutyCycle],
+        'Neg Duty': ['%', measureNegDutyCycle],
+        'Fall Time': ['s', measureFallTime],
+        'Rise Time': ['s', measureRiseTime],
+        'Num Falling': ['', measureFallEdgeCount],
+        'Num Neg Pulses': ['', measureFallPulseCount],
+        'Num Rising': ['', measureRiseEdgeCount],
+        'Num Pos Pulses': ['', measureRisePulseCount],
+        '- Width': ['s', measureNegPulseWidth],
+        '+ Width': ['s', measurePosPulseWidth],
+        'Overshoot': ['%', measureOvershoot],
+        'Preshoot': ['%', measurePreshoot],
+        'Amplitude': ['V', measureVoltAmplitude],
+        'Top': ['V', measureVoltTop],
+        'Base': ['V', measureVoltBase],
+        'Maximum': ['V', measureVoltMax],
+        'Minimum': ['V', measureVoltMin],
+        'Pk-Pk': ['V', measureVoltPP],
+        'Average - Full Screen': ['V', measureVoltAverage],
+        'RMS - Full Screen': ['V', measureVoltRMS],
+        }
+            
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a MSO-X/DSO-X 3000 Oscilloscope')
     parser.add_argument('chan', nargs='?', type=int, help='Channel to access/control (starts at 1)', default=1)
     args = parser.parse_args()
 
-    from time import sleep
     from os import environ
     resource = environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
     instr = MSOX3000(resource)
     instr.open()
 
-    ## set Remote Lock On
-    #instr.setRemoteLock()
-    
-    instr.beeperOff()
-    
     if not instr.isOutputOn(args.chan):
         instr.outputOn()
-        
-    print('Ch. {} Settings: {:6.4f} V  {:6.4f} A'.
-              format(args.chan, instr.queryVoltage(),
-                         instr.queryCurrent()))
 
-    voltageSave = instr.queryVoltage()
+    # Install measurements to display in statistics display and also return their current values
+    print('Ch. {} Settings: {:6.4e} V  PW {:6.4e} s\n'.
+              format(args.chan, instr.measureVoltAverage(args.chan, install=True),
+                         instr.measurePosPulseWidth(args.chan, install=True)))
+
+    # Make sure the statistics display is showing
+    instr._instWrite("MEASure:STATistics:DISPlay ON")
     
-    #print(instr.idn())
-    print('{:6.4f} V'.format(instr.measureVoltage()))
-    print('{:6.4f} A'.format(instr.measureCurrent()))
+    ## Save a hardcopy of the screen
+    instr.hardcopy('outfile.png')
 
-    instr.setVoltage(2.7)
-
-    print('{:6.4f} V'.format(instr.measureVoltage()))
-    print('{:6.4f} A'.format(instr.measureCurrent()))
-
-    instr.setVoltage(2.3)
-
-    print('{:6.4f} V'.format(instr.measureVoltage()))
-    print('{:6.4f} A'.format(instr.measureCurrent()))
-
-    instr.setVoltage(voltageSave)
-
-    print('{:6.4f} V'.format(instr.measureVoltage()))
-    print('{:6.4f} A'.format(instr.measureCurrent()))
-
+    ## Read ALL available measurements from channel, without installing
+    ## to statistics display, with units
+    print('\nMeasurements for Ch. {}:'.format(args.chan))
+    measurements = ['Bit Rate',
+                    'Burst Width',
+                    'Counter Freq',
+                    'Frequency',
+                    'Period',
+                    'Duty',
+                    'Neg Duty',
+                    '+ Width',
+                    '- Width',
+                    'Rise Time',                            
+                    'Num Rising',
+                    'Num Pos Pulses',
+                    'Fall Time',
+                    'Num Falling',
+                    'Num Neg Pulses',
+                    'Overshoot',
+                    'Preshoot',
+                    '',
+                    'Amplitude',
+                    'Pk-Pk',
+                    'Top',
+                    'Base',
+                    'Maximum',
+                    'Minimum',
+                    'Average - Full Screen',
+                    'RMS - Full Screen',
+                    ]
+    for meas in measurements:
+        if (meas is ''):
+            # use a blank string to put in an extra line
+            print()
+        else:
+            # using MSOX3000.measureTbl[] dictionary, call the
+            # appropriate method to read the measurement. Also, using
+            # the same measurement name, pass it to the polish() method
+            # to format the data with units and SI suffix.
+            print('{: <24} {:>12.6}'.format(meas,instr.polish(MSOX3000.measureTbl[meas][1](instr, args.chan), meas)))
+        
     ## turn off the channel
     instr.outputOff()
-
-    instr.beeperOn()
 
     ## return to LOCAL mode
     instr.setLocal()

@@ -37,7 +37,7 @@ setup(name="msox3000",
         'Topic :: Software Development',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'], 
-     install_requires=['pyvisa', 'pyvisa-py'],
+     install_requires=['pyvisa', 'pyvisa-py', 'argparse', 'QuantiPhy'],
      packages=["msox3000"],
      include_package_data=True,
      zip_safe=False

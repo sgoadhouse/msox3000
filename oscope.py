@@ -130,7 +130,7 @@ def main():
                     print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
                 else:
                     print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
-            except Exception:
+            except ValueError:
                     print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
                         
     if (args.dvm):

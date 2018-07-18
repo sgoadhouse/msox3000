@@ -37,6 +37,7 @@ from __future__ import division
 from __future__ import print_function
 
 from time import sleep
+from sys import version_info
 import visa
 
 class SCPI(object):
@@ -81,7 +82,7 @@ class SCPI(object):
         self._inst.timeout = self._timeout
 
         # Keysight recommends using clear() but it is currently not implemented in pyvisa-py v0.2
-        #@@@#self._inst.clear()
+        # self._inst.clear()
         #
         # Instead, send a *CLS system command to at least clear the command
         # handler (error queues and such)
@@ -248,7 +249,14 @@ class SCPI(object):
             writeStr = self._prefix + writeStr
         #print("WRITE:",writeStr)
 
-        result = self._inst.write_binary_values(writeStr, values, datatype='B')
+        if (version_info < (3,)):
+            ## If PYTHON 2, must use datatype of 'c'
+            datatype = 'c'
+        else:
+            ## If PYTHON 2, must use datatype of 'B' to get the same result
+            datatype = 'B'
+        
+        result = self._inst.write_binary_values(writeStr, values, datatype=datatype)
         self.checkInstErrors(writeStr)
         return result
         

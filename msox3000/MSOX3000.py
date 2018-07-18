@@ -39,6 +39,7 @@ except Exception:
 from time import sleep
 from datetime import datetime
 from quantiphy import Quantity
+from sys import version_info
 import visa
 
 class MSOX3000(SCPI):
@@ -139,6 +140,7 @@ class MSOX3000(SCPI):
         """
 
         # turn on the statistics display
+        self._instWrite("SYSTem:MENU MEASure")
         self._instWrite("MEASure:STATistics:DISPlay ON")
 
         # tell Results? return all values (as opposed to just one of them)
@@ -984,7 +986,15 @@ class MSOX3000(SCPI):
         y_reference = self._instQueryNumber("WAVeform:YREFerence?")
 
         # Get the waveform data.
-        data_bytes = self._instQueryIEEEBlock("WAVeform:DATA?")
+        waveform_data = self._instQueryIEEEBlock("WAVeform:DATA?")
+
+        if (version_info < (3,)):
+            ## If PYTHON 2, waveform_data will be a string and needs to be converted into a list of integers
+            data_bytes = [ord(x) for x in waveform_data]
+        else:
+            ## If PYTHON 3, waveform_data is already in the correct format
+            data_bytes = waveform_data
+        
         nLength = len(data_bytes)
         if (DEBUG):
             print( "Number of data values: {:d}".format(nLength) )
@@ -1056,12 +1066,30 @@ if __name__ == '__main__':
               format(args.chan, instr.measureVoltAverage(args.chan, install=True),
                          instr.measurePosPulseWidth(args.chan, install=True)))
 
+    # Add an annotation to the screen before hardcopy
+    instr._instWrite("DISPlay:ANN ON")
+    instr._instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',args.chan))
+    instr._instWrite("DISPlay:ANN:BACKground TRAN")   # transparent background - can also be OPAQue or INVerted
+    instr._instWrite("DISPlay:ANN:COLor CH{}".format(args.chan))
+
+    # Change label of the channel to "MySig"
+    instr._instWrite('CHAN{}:LABel "MySig"'.format(args.chan))
+    instr._instWrite('DISPlay:LABel ON')
+    
     # Make sure the statistics display is showing
+    instr._instWrite("SYSTem:MENU MEASure")
     instr._instWrite("MEASure:STATistics:DISPlay ON")
     
     ## Save a hardcopy of the screen
     instr.hardcopy('outfile.png')
 
+    # Change label back to the default
+    instr._instWrite('CHAN{}:LABel "{}"'.format(args.chan, args.chan))
+    instr._instWrite('DISPlay:LABel OFF')
+    
+    # Turn off the annotation
+    instr._instWrite("DISPlay:ANN OFF")
+    
     ## Read ALL available measurements from channel, without installing
     ## to statistics display, with units
     print('\nMeasurements for Ch. {}:'.format(args.chan))

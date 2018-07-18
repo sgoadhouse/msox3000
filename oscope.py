@@ -98,41 +98,32 @@ def main():
     parser.add_argument('--setup_save', '-s', metavar='outfile.stp', help='save the current setup of the oscilloscope into the named file')
     parser.add_argument('--setup_load', '-l', metavar='infile.stp', help='load the current setup of the oscilloscope from the named file')
     parser.add_argument('--statistics', '-t', action='store_true', help='dump to the output the current displayed measurements')
-    parser.add_argument('--autoscale', '-a',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+    parser.add_argument('--autoscale', '-u',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
                             help='cause selected channel to autoscale')
     parser.add_argument('--dvm', '-d', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
                             help='measure and output the DVM readings of selected channel')
     parser.add_argument('--measure', '-m', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
                             help='measure and output the selected channel')
+    parser.add_argument('--annotate', '-a', nargs='?', metavar='text', const=' ', help='Add annotation text to screen. Clear text if label is blank')
+    parser.add_argument('--annocolor', '-c', nargs=1, metavar='color', 
+                            choices=['ch1', 'ch2', 'ch3', 'ch4', 'dig', 'math', 'ref', 'marker', 'white', 'red'],
+                            help='Set the annotation color to use. Valid values: %(choices)s')
+    parser.add_argument('--label', '-b',  nargs=2, action='append', metavar=('channel', 'label'), 
+                            help='Change label of selected channel')
+
+    # Print help if no options are given on the command line
+    if (len(sys.argv) <= 1):
+        parser.print_help(sys.stderr)
+        sys.exit(1)
 
     args = parser.parse_args()
-
+    
     ## Connect to the Oscilloscope
     scope = MSOX3000(agilent_msox_3034a)
     scope.open()
 
     print(scope.idn())
 
-    if (args.hardcopy):
-        fn = handleFilename(args.hardcopy, 'png')
-        
-        scope.hardcopy(fn)
-        print("Hardcopy Output file: %s" % fn )
-
-    if (args.waveform):
-        for nxt in args.waveform:
-            # check the channel
-            try:
-                channel = int(nxt[0])
-                if (channel >= 1 and channel <= MSOX3000.maxChannel):
-                    fn = handleFilename(nxt[1], 'csv')
-                    dataLen = scope.waveform(fn, channel)
-                    print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
-                else:
-                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
-            except ValueError:
-                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
-                        
     if (args.dvm):
         for lst in args.dvm:
             chan = lst[0]
@@ -218,6 +209,57 @@ def main():
                     # the data with units and SI suffix.
                     print('{: <24} {:>12.6}'.format(meas,scope.polish(MSOX3000.measureTbl[meas][1](scope, chan), meas)))
                                     
+    if (args.annotate):
+        text = args.annotate
+
+        # If only whitespace is passed in, then turn off the
+        # annotation. Doing it this way allows leading and trailing
+        # whitespace in actual annotation if there are non-whitespace
+        # characters as well.
+        if (not text.strip()):
+            scope.annotateOff()
+        else:
+            # TRAN = transparent background - can also be OPAQue or INVerted
+            scope.annotate(text, background='TRAN')
+            
+    if (args.annocolor):
+        # If the annocolor option is given, simply change the color,
+        # even if not even enabled yet
+        scope.annotateColor(args.annocolor[0])
+        
+    if (args.label):
+        # step through all label options
+        for nxt in args.label:
+            # check the channel number
+            try:
+                channel = int(nxt[0])
+                if (channel >= 1 and channel <= MSOX3000.maxChannel):
+                    scope.channelLabel(nxt[1], channel=channel)
+                else:
+                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
+            except ValueError:
+                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
+                        
+    if (args.hardcopy):
+        fn = handleFilename(args.hardcopy, 'png')
+        
+        scope.hardcopy(fn)
+        print("Hardcopy Output file: {}".format(fn) )
+
+    if (args.waveform):
+        for nxt in args.waveform:
+            # check the channel
+            try:
+                channel = int(nxt[0])
+                if (channel >= 1 and channel <= MSOX3000.maxChannel):
+                    fn = handleFilename(nxt[1], 'csv')
+                    dataLen = scope.waveform(fn, channel)
+                    print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
+                else:
+                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
+            except ValueError:
+                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
+                        
     if (args.setup_save):
         fn = handleFilename(args.setup_save, 'stp')
         

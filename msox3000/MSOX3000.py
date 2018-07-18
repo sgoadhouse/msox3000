@@ -110,7 +110,59 @@ class MSOX3000(SCPI):
                     
         self._instWrite("AUToscale {}".format(self._channelStr(self.channel)))
 
+    def annotate(self, text, color=None, background='TRAN'):
+        """ Add an annotation with text, color and background to screen 
+        
+            text - text of annotation. Can include \n for newlines (two characters)
 
+            color - string, one of {CH1 | CH2 | CH3 | CH4 | DIG | MATH | REF | MARK | WHIT | RED}
+
+            background - string, one of TRAN - transparent, OPAQue or INVerted
+        """
+
+        if (color):
+            self.annotateColor(color)
+
+        # Add an annotation to the screen
+        self._instWrite("DISPlay:ANN:BACKground {}".format(background))   # transparent background - can also be OPAQue or INVerted
+        self._instWrite('DISPlay:ANN:TEXT "{}"'.format(text))
+        self._instWrite("DISPlay:ANN ON")
+            
+    def annotateColor(self, color):
+        """ Change screen annotation color """
+
+        ## NOTE: Only certain values are allowed:
+        # {CH1 | CH2 | CH3 | CH4 | DIG | MATH | REF | MARK | WHIT | RED}
+        #
+        # The scope will respond with an error if an invalid color string is passed along
+        self._instWrite("DISPlay:ANN:COLor {}".format(color)) 
+
+    def annotateOff(self):
+        """ Turn off screen annotation """
+
+        self._instWrite("DISPlay:ANN OFF")
+
+        
+    def channelLabel(self, label, channel=None):
+        """ Add a label to selected channel (or default one if None)
+        
+            label - text of label
+        """
+
+        # If a channel number is passed in, make it the
+        # current channel
+        if channel is not None:
+            self.channel = channel
+        
+        self._instWrite('CHAN{}:LABel "{}"'.format(self.channel, label))
+        self._instWrite('DISPlay:LABel ON')
+            
+    def channelLabelOff(self):
+        """ Turn off channel labels """
+
+        self._instWrite('DISPlay:LABel OFF')
+
+        
     def polish(self, value, measure=None):
         """ Using the QuantiPhy package, return a value that is in apparopriate Si units.
 

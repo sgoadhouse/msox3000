@@ -47,7 +47,7 @@ pip install msox3000
 * [quantiphy 2.3.0](http://quantiphy.readthedocs.io/en/stable/) 
 
 With the use of pyvisa-py, should not have to install the National
-Instruments NIVA driver.
+Instruments VISA driver.
 
 ## Features
 

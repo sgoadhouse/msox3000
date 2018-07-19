@@ -44,20 +44,65 @@ pip install msox3000
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
 * [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
 * [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/) 
+* [argparse](https://docs.python.org/3/library/argparse.html) 
 * [quantiphy 2.3.0](http://quantiphy.readthedocs.io/en/stable/) 
 
 With the use of pyvisa-py, should not have to install the National
 Instruments NIVA driver.
 
+## Features
+
+This code is not an exhaustive coverage of all available commands and
+queries of the oscilloscopes. The features that do exist are mainly
+ones that improve productivity like grabbing a screen hardcopy
+directly to an image file on a computer with a descriptive name. This
+eliminates the need to save to a USB stick with no descriptive name,
+keep track of which hardcopy is which and then eventually take the USB
+drive to a computer to download and attempt to figure out which
+hardcopy is which. Likewise, I have never bothered to use signal
+labels because the oscilloscope interface for adding the labels was
+primitive and impractical. With this code, can now easily send labels
+from the computer which are easy to create and update.
+
+Currently, this is a list of the features that are supported so far:
+
+* Only the analog channels are supported
+* Reading of all available single channel measurements 
+* Reading of all available DVM measurements 
+* Installing measurements to statistics display
+* Reading data from statistics display
+* Screen Hardcopy to PNG image file
+* Reading actual waveform data to a csv file
+* Saving oscilloscope setup to a file
+* Loading oscilloscope setup from saved file
+* Issuing Autoscale for a channel
+* Screen Annotation
+* Channel Labels
+
+It is expected that new interfaces will be added over time to control
+and automate the oscilloscope. The key features that would be good to
+add next are: run/stop control, trigger setup, horizontal and vertical
+scale control, zoom control
+
 ## Usage
-The code is a very basic class for controlling and accessing the
+The code is a basic class for controlling and accessing the
 supported oscilloscopes.
 
-If running the examples embedded in the individual package source
-files, be sure to edit the resource string or VISA descriptor of your
-particular device. For MSOX3000.py, you can also set an environment
-variable, MSOX3000\_IP to the desired resource string before running the
-code. 
+The examples are written to access the oscilloscope over
+ethernet/TCPIP. So the examples need to know the IP address of your
+specific oscilloscope. Also, PyVISA can support other access
+mechanisms, like USB. So the examples must be edited to use the
+resource string or VISA descriptor of your particular
+device. Alternatively, you can set an environment variable, MSOX3000\_IP to
+the desired resource string before running the code. If not using
+ethernet to access your device, search online for the proper resource
+string needed to access your device.
+
+For more detailed examples, see:
+
+```
+oscope.py -h
+```
 
 ```python
 # Lookup environment variable MSOX3000_IP and use it as the resource
@@ -90,27 +135,25 @@ print('Ch. {} Settings: {:6.4e} V  PW {:6.4e} s\n'.
                      instr.measurePosPulseWidth(install=True)))
 
 # Add an annotation to the screen before hardcopy
-instr._instWrite("DISPlay:ANN ON")
-instr._instWrite('DISPlay:ANN:TEXT "{}\\n{} {}"'.format('Example of Annotation','for Channel',instr.channel))
-instr._instWrite("DISPlay:ANN:COLor CH{}".format(instr.channel))
+instr.annotateColor("CH{}".format(instr.channel))
+instr.annotate('{}\\n{} {}'.format('Example of Annotation','for Channel',instr.channel))
 
 # Change label of the channel to "MySig"
-instr._instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
-instr._instWrite('DISPlay:LABel ON')
+instr.channelLabel('MySig')
 
-# Make sure the statistics display is showing
+# Make sure the statistics display is showing for the hardcopy
 instr._instWrite("SYSTem:MENU MEASure")
 instr._instWrite("MEASure:STATistics:DISPlay ON")
 
 ## Save a hardcopy of the screen to file 'outfile.png'
 instr.hardcopy('outfile.png')
 
-# Change label back to the default
-instr._instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
-instr._instWrite('DISPlay:LABel OFF')
+# Change label back to the default and turn it off
+instr.channelLabel('{}'.format(instr.channel))
+instr.channelLabelOff()
 
 # Turn off the annotation
-instr._instWrite("DISPlay:ANN OFF")
+instr.annotateOff()
     
 # turn off the channel
 instr.outputOff()

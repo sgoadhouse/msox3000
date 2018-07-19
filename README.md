@@ -19,8 +19,6 @@ with the PyVisa-PY access mode which eliminates the need for the (very
 buggy) VISA library to be installed on your computer. 
 
 # Installation
-You need to install the pyvisa and pyvisa-py packages. 
-
 To install the msox3000 package, run the command:
 
 ```
@@ -30,10 +28,11 @@ python setup.py install
 Alternatively, can add a path to this package to the environment
 variable PYTHONPATH or even add the path to it at the start of your
 python script. Use your favorite web search engine to find out more
-details.
+details. If you follow this route, you will need to also install all
+of the dependant packages which are shown below under Requirements.
 
 Even better, msox3000 is on PyPi. So
-you can simply use the following and the required depedancies should
+you can simply use the following and the required dependancies should
 get installed for you:
 
 ```

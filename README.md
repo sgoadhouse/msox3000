@@ -80,8 +80,9 @@ Currently, this is a list of the features that are supported so far:
 
 It is expected that new interfaces will be added over time to control
 and automate the oscilloscope. The key features that would be good to
-add next are: run/stop control, trigger setup, horizontal and vertical
-scale control, zoom control
+add next are: support for Digital/Math/etc. channels, run/stop
+control, trigger setup, horizontal and vertical scale control, zoom
+control
 
 ## Usage
 The code is a basic class for controlling and accessing the
@@ -102,6 +103,10 @@ For more detailed examples, see:
 ```
 oscope.py -h
 ```
+
+A basic example that installs a few measurements to the statistics
+display, adds some annotations and signal labels and then saves a
+hardcopy to a file.
 
 ```python
 # Lookup environment variable MSOX3000_IP and use it as the resource

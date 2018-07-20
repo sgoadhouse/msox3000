@@ -219,12 +219,14 @@ class MSOX3000(SCPI):
         # return the result in an array of dictionaries
         return stats
     
-    def _measure(self, mode, para=None, channel=None, install=False):
+    def _measure(self, mode, para=None, channel=None, wait=0.25, install=False):
         """Read and return a measurement of type mode from channel
         
            para - parameters to be passed to command
 
            channel - number of the channel to be measured starting at 1 
+
+           wait - if not None, number of seconds to wait before querying measurement
 
            install - if True, adds measurement to the statistics display
         """
@@ -262,12 +264,16 @@ class MSOX3000(SCPI):
             self._instWrite("MEASure:STATistics:DISPlay ON")
             self._instWrite(strWr)
 
+        # wait a little before read value, if wait is not None
+        if (wait):
+            sleep(wait)
+                    
         # query the measurement (do not have to install to query it)
         val = self._instQuery(strQu)
 
         return float(val)
 
-    def measureBitRate(self, channel=None, install=False):
+    def measureBitRate(self, channel=None, wait=0.25, install=False):
         """Measure and return the bit rate measurement.
 
         This measurement is defined as: 'measures all positive and
@@ -281,12 +287,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("BRATe", channel=channel, install=install)
+        return self._measure("BRATe", channel=channel, wait=wait, install=install)
     
-    def measureBurstWidth(self, channel=None, install=False):
+    def measureBurstWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the bit rate measurement.
 
         This measurement is defined as: 'the width of the burst on the
@@ -298,12 +306,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("BWIDth", channel=channel, install=install)
+        return self._measure("BWIDth", channel=channel, wait=wait, install=install)
     
-    def measureCounterFrequency(self, channel=None, install=False):
+    def measureCounterFrequency(self, channel=None, wait=0.25, install=False):
         """Measure and return the counter frequency
 
         This measurement is defined as: 'the counter frequency.'
@@ -314,6 +324,8 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - issues if install, so this paramter is ignored
         """
 
@@ -322,9 +334,9 @@ class MSOX3000(SCPI):
         # measurement will fail. Note doing the CLEAR, but if COUNTER
         # gets installed, this will fail until it gets manually CLEARed.
         
-        return self._measure("COUNter", channel=channel, install=False)
+        return self._measure("COUNter", channel=channel, wait=wait, install=False)
     
-    def measurePosDutyCycle(self, channel=None, install=False):
+    def measurePosDutyCycle(self, channel=None, wait=0.25, install=False):
         """Measure and return the positive duty cycle
 
         This measurement is defined as: 'The value returned for the duty
@@ -341,12 +353,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("DUTYcycle", channel=channel, install=install)
+        return self._measure("DUTYcycle", channel=channel, wait=wait, install=install)
     
-    def measureFallTime(self, channel=None, install=False):
+    def measureFallTime(self, channel=None, wait=0.25, install=False):
         """Measure and return the fall time
 
         This measurement is defined as: 'the fall time of the displayed
@@ -364,12 +378,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("FALLtime", channel=channel, install=install)
+        return self._measure("FALLtime", channel=channel, wait=wait, install=install)
     
-    def measureRiseTime(self, channel=None, install=False):
+    def measureRiseTime(self, channel=None, wait=0.25, install=False):
         """Measure and return the rise time
 
         This measurement is defined as: 'the rise time of the displayed
@@ -389,12 +405,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("RISetime", channel=channel, install=install)
+        return self._measure("RISetime", channel=channel, wait=wait, install=install)
     
-    def measureFrequency(self, channel=None, install=False):
+    def measureFrequency(self, channel=None, wait=0.25, install=False):
         """Measure and return the frequency of cycle on screen
 
         This measurement is defined as: 'the frequency of the cycle on
@@ -406,12 +424,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("FREQ", channel=channel, install=install)
+        return self._measure("FREQ", channel=channel, wait=wait, install=install)
     
-    def measureNegDutyCycle(self, channel=None, install=False):
+    def measureNegDutyCycle(self, channel=None, wait=0.25, install=False):
         """Measure and return the negative duty cycle
 
         This measurement is defined as: 'The value returned for the duty
@@ -428,12 +448,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("NDUTy", channel=channel, install=install)
+        return self._measure("NDUTy", channel=channel, wait=wait, install=install)
     
-    def measureFallEdgeCount(self, channel=None, install=False):
+    def measureFallEdgeCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling edge count
 
         This measurement is defined as: 'the on-screen falling edge
@@ -445,12 +467,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("NEDGes", channel=channel, install=install)
+        return self._measure("NEDGes", channel=channel, wait=wait, install=install)
     
-    def measureFallPulseCount(self, channel=None, install=False):
+    def measureFallPulseCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling pulse count
 
         This measurement is defined as: 'the on-screen falling pulse
@@ -462,12 +486,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("NPULses", channel=channel, install=install)
+        return self._measure("NPULses", channel=channel, wait=wait, install=install)
     
-    def measureNegPulseWidth(self, channel=None, install=False):
+    def measureNegPulseWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling/negative pulse width
 
         This measurement is defined as: 'the width of the negative pulse
@@ -484,12 +510,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("NWIDth", channel=channel, install=install)
+        return self._measure("NWIDth", channel=channel, wait=wait, install=install)
     
-    def measureOvershoot(self, channel=None, install=False):
+    def measureOvershoot(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen voltage overshoot in percent
 
         This measurement is defined as: 'the overshoot of the edge
@@ -521,12 +549,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("OVERshoot", channel=channel, install=install)
+        return self._measure("OVERshoot", channel=channel, wait=wait, install=install)
     
-    def measurePreshoot(self, channel=None, install=False):
+    def measurePreshoot(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen voltage preshoot in percent
 
         This measurement is defined as: 'the preshoot of the edge
@@ -558,12 +588,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("PREShoot", channel=channel, install=install)
+        return self._measure("PREShoot", channel=channel, wait=wait, install=install)
     
-    def measureRiseEdgeCount(self, channel=None, install=False):
+    def measureRiseEdgeCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen rising edge count
 
         This measurement is defined as: 'the on-screen rising edge
@@ -575,12 +607,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("PEDGes", channel=channel, install=install)
+        return self._measure("PEDGes", channel=channel, wait=wait, install=install)
     
-    def measureRisePulseCount(self, channel=None, install=False):
+    def measureRisePulseCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen rising pulse count
 
         This measurement is defined as: 'the on-screen rising pulse
@@ -592,12 +626,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("PPULses", channel=channel, install=install)
+        return self._measure("PPULses", channel=channel, wait=wait, install=install)
     
-    def measurePosPulseWidth(self, channel=None, install=False):
+    def measurePosPulseWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling/positive pulse width
 
         This measurement is defined as: 'the width of the displayed
@@ -616,12 +652,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("PWIDth", channel=channel, install=install)
+        return self._measure("PWIDth", channel=channel, wait=wait, install=install)
     
-    def measurePeriod(self, channel=None, install=False):
+    def measurePeriod(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen period
 
         This measurement is defined as: 'the period of the cycle closest
@@ -640,12 +678,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("PERiod", channel=channel, install=install)
+        return self._measure("PERiod", channel=channel, wait=wait, install=install)
     
-    def measureVoltAmplitude(self, channel=None, install=False):
+    def measureVoltAmplitude(self, channel=None, wait=0.25, install=False):
         """Measure and return the vertical amplitude of the signal
 
         This measurement is defined as: 'the vertical amplitude of the
@@ -660,12 +700,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VAMPlitude", channel=channel, install=install)
+        return self._measure("VAMPlitude", channel=channel, wait=wait, install=install)
     
-    def measureVoltAverage(self, channel=None, install=False):
+    def measureVoltAverage(self, channel=None, wait=0.25, install=False):
         """Measure and return the Average Voltage measurement.
 
         This measurement is defined as: 'average value of an integral
@@ -678,12 +720,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VAVerage", para="DISPlay", channel=channel, install=install)
+        return self._measure("VAVerage", para="DISPlay", channel=channel, wait=wait, install=install)
     
-    def measureVoltRMS(self, channel=None, install=False):
+    def measureVoltRMS(self, channel=None, wait=0.25, install=False):
         """Measure and return the DC RMS Voltage measurement.
 
         This measurement is defined as: 'the dc RMS value of the
@@ -698,12 +742,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VRMS", para="DISPlay", channel=channel, install=install)
+        return self._measure("VRMS", para="DISPlay", channel=channel, wait=wait, install=install)
     
-    def measureVoltBase(self, channel=None, install=False):
+    def measureVoltBase(self, channel=None, wait=0.25, install=False):
         """Measure and return the Voltage base measurement.
 
         This measurement is defined as: 'the vertical value at the base
@@ -716,12 +762,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VBASe", channel=channel, install=install)
+        return self._measure("VBASe", channel=channel, wait=wait, install=install)
     
-    def measureVoltTop(self, channel=None, install=False):
+    def measureVoltTop(self, channel=None, wait=0.25, install=False):
         """Measure and return the Voltage Top measurement.
 
         This measurement is defined as: 'the vertical value at the top
@@ -734,12 +782,14 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VTOP", channel=channel, install=install)
+        return self._measure("VTOP", channel=channel, wait=wait, install=install)
     
-    def measureVoltMax(self, channel=None, install=False):
+    def measureVoltMax(self, channel=None, wait=0.25, install=False):
         """Measure and return the Maximum Voltage measurement.
 
         This measurement is defined as: 'the maximum vertical value
@@ -751,13 +801,15 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VMAX", channel=channel, install=install)
+        return self._measure("VMAX", channel=channel, wait=wait, install=install)
     
 
-    def measureVoltMin(self, channel=None, install=False):
+    def measureVoltMin(self, channel=None, wait=0.25, install=False):
         """Measure and return the Minimum Voltage measurement.
 
         This measurement is defined as: 'the minimum vertical value
@@ -769,13 +821,15 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VMIN", channel=channel, install=install)
+        return self._measure("VMIN", channel=channel, wait=wait, install=install)
     
 
-    def measureVoltPP(self, channel=None, install=False):
+    def measureVoltPP(self, channel=None, wait=0.25, install=False):
         """Measure and return the voltage peak-to-peak measurement.
 
         This measurement is defined as: 'the maximum and minimum
@@ -795,13 +849,15 @@ class MSOX3000(SCPI):
         channel: channel number to be measured - default channel for
         future readings
 
+        wait - if not None, number of seconds to wait before querying measurement
+
         install - if True, adds measurement to the statistics display
         """
 
-        return self._measure("VPP", channel=channel, install=install)
+        return self._measure("VPP", channel=channel, wait=wait, install=install)
     
 
-    def _readDVM(self, mode, channel=None, timeout=None):
+    def _readDVM(self, mode, channel=None, timeout=None, wait=0.5):
         """Read the DVM data of desired channel and return the value. 
 
         channel: channel number to set to DVM mode and return its
@@ -809,6 +865,9 @@ class MSOX3000(SCPI):
 
         timeout: if None, no timeout, otherwise, time-out in seconds
         waiting for a valid number
+
+        wait: Number of seconds after select DVM mode before trying to
+        read values. Set to None for no waiting (not recommended)
         """
 
         # If a channel number is passed in, make it the
@@ -838,6 +897,10 @@ class MSOX3000(SCPI):
         # Select the desired DVM mode
         self._instWrite("DVM:MODE {}".format(mode))
 
+        # wait a little before read value to make sure everything is switched
+        if (wait):
+            sleep(wait)
+        
         # Read value until get one < +9.9E+37 (per programming guide suggestion)
         startTime = datetime.now()
         val = SCPI.OverRange
@@ -848,7 +911,7 @@ class MSOX3000(SCPI):
                 # many seconds for a valid DVM value, stop waiting and
                 # return this SCPI.OverRange number.
                 break
-            
+
             val = self._instQueryNumber("DVM:CURRent?")
 
         # if mode is frequency, read and return the 5-digit frequency instead
@@ -857,7 +920,7 @@ class MSOX3000(SCPI):
             
         return val
 
-    def measureDVMacrms(self, channel=None, timeout=None):
+    def measureDVMacrms(self, channel=None, timeout=None, wait=0.5):
         """Measure and return the AC RMS reading of channel using DVM
         mode.
 
@@ -871,9 +934,9 @@ class MSOX3000(SCPI):
         waiting for a valid number - if timeout, returns SCPI.OverRange
         """
 
-        return self._readDVM("ACRM", channel, timeout)
+        return self._readDVM("ACRM", channel, timeout, wait)
     
-    def measureDVMdc(self, channel=None, timeout=None):
+    def measureDVMdc(self, channel=None, timeout=None, wait=0.5):
         """ Measure and return the DC reading of channel using DVM mode. 
         
         DC is defined as 'the DC value of the acquired data.'
@@ -885,9 +948,9 @@ class MSOX3000(SCPI):
         waiting for a valid number - if timeout, returns SCPI.OverRange
         """
 
-        return self._readDVM("DC", channel, timeout)
+        return self._readDVM("DC", channel, timeout, wait)
     
-    def measureDVMdcrms(self, channel=None, timeout=None):
+    def measureDVMdcrms(self, channel=None, timeout=None, wait=0.5):
         """ Measure and return the DC RMS reading of channel using DVM mode. 
         
         DC RMS is defined as 'the root-mean-square value of the acquired data.'
@@ -899,9 +962,9 @@ class MSOX3000(SCPI):
         waiting for a valid number - if timeout, returns SCPI.OverRange
         """
 
-        return self._readDVM("DCRM", channel, timeout)
+        return self._readDVM("DCRM", channel, timeout, wait)
     
-    def measureDVMfreq(self, channel=None, timeout=3):
+    def measureDVMfreq(self, channel=None, timeout=3, wait=0.5):
         """ Measure and return the FREQ reading of channel using DVM mode. 
         
         FREQ is defined as 'the frequency counter measurement.'
@@ -916,7 +979,7 @@ class MSOX3000(SCPI):
         a frequency is measured, unless a timeout value is given.
         """
 
-        return self._readDVM("FREQ", channel, timeout)
+        return self._readDVM("FREQ", channel, timeout, wait)
     
 
     # =========================================================

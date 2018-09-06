@@ -75,7 +75,7 @@ def handleFilename(fname, ext, unique=True, timestamp=True):
 
     if (timestamp):
         # add timestamp suffix
-        fn = fn + '-' + datetime.now().strftime("%Y%0m%0d-%0H%0M%0S")
+        fn = fn + '-' + datetime.now().strftime("%Y%m%d-%H%M%S")
 
     suffix = ''
     if (unique):

@@ -10,10 +10,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
- 
+
 #---------------------------------------------------------------------------------
 #  Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope using
 #  standard SCPI commands with PyVISA
@@ -45,7 +45,7 @@ class SCPI(object):
 
     OverRange = +9.9E+37                  # Number which indicates Over Range
     UnderRange = -9.9E+37                 # Number which indicates Under Range
-    
+
     def __init__(self, resource, max_chan=1, wait=0,
                      cmd_prefix = '',
                      read_strip = '',
@@ -71,7 +71,7 @@ class SCPI(object):
         self._read_termination = read_termination
         self._write_termination = write_termination
         self._timeout = timeout
-        self._inst = None        
+        self._inst = None
 
     def open(self):
         """Open a connection to the VISA device with PYVISA-py python library"""
@@ -95,7 +95,7 @@ class SCPI(object):
     @property
     def channel(self):
         return self._curr_chan
-    
+
     @channel.setter
     def channel(self, value):
         if (value < 1) or (value > self._max_chan):
@@ -123,22 +123,22 @@ class SCPI(object):
         if checkErrors:
             self.checkInstErrors(writeStr)
         return result
-        
+
     def _chStr(self, channel):
         """return the channel string given the channel number and using the format CHx"""
 
         return 'CH{}'.format(channel)
-    
+
     def _chanStr(self, channel):
         """return the channel string given the channel number and using the format x"""
 
         return '{}'.format(channel)
-    
+
     def _channelStr(self, channel):
         """return the channel string given the channel number and using the format CHANnelx"""
 
         return 'CHANnel{}'.format(channel)
-    
+
     def _onORoff(self, str):
         """Check if string says it is ON or OFF and return True if ON
         and False if OFF
@@ -150,7 +150,7 @@ class SCPI(object):
             return True
         else:
             return False
-        
+
     def _1OR0(self, str):
         """Check if string says it is 1 or 0 and return True if 1
         and False if 0
@@ -162,7 +162,7 @@ class SCPI(object):
             return True
         else:
             return False
-        
+
     def _chanNumber(self, str):
         """Decode the response as a channel number and return it. Return 0 if string does not decode properly.
         """
@@ -173,7 +173,7 @@ class SCPI(object):
             return int(str[4])
         else:
             return 0
-        
+
     def _wait(self):
         """Wait until all preceeding commands complete"""
         #self._instWrite('*WAI')
@@ -183,7 +183,7 @@ class SCPI(object):
             ret = self._instQuery('*OPC?')
             if ret[0] == '1':
                 wait = False
-        
+
     # =========================================================
     # Taken from the MSO-X 3000 Programming Guide and modified to work
     # within this class ...
@@ -227,7 +227,7 @@ class SCPI(object):
         result = self._inst.query_binary_values(queryStr, datatype='s')
         self.checkInstErrors(queryStr)
         return result[0]
-            
+
     # =========================================================
     # Based on code from the MSO-X 3000 Programming
     # Guide and modified to work within this class ...
@@ -239,7 +239,7 @@ class SCPI(object):
         result = self._inst.query_ascii_values(queryStr, converter='f', separator=',')
         self.checkInstErrors(queryStr)
         return result
-            
+
     # =========================================================
     # Based on do_command_ieee_block() from the MSO-X 3000 Programming
     # Guide and modified to work within this class ...
@@ -255,11 +255,11 @@ class SCPI(object):
         else:
             ## If PYTHON 2, must use datatype of 'B' to get the same result
             datatype = 'B'
-        
+
         result = self._inst.write_binary_values(writeStr, values, datatype=datatype)
         self.checkInstErrors(writeStr)
         return result
-        
+
     def _instWriteIEEENumbers(self, writeStr, values):
         if (writeStr[0] != '*'):
             writeStr = self._prefix + writeStr
@@ -268,7 +268,7 @@ class SCPI(object):
         result = self._inst.write_binary_values(writeStr, values, datatype='f')
         self.checkInstErrors(writeStr)
         return result
-        
+
     def idn(self):
         """Return response to *IDN? message"""
         return self._instQuery('*IDN?')
@@ -288,7 +288,7 @@ class SCPI(object):
         # Not sure if this is SCPI, but it appears to be supported
         # across different instruments
         self._instWrite('SYSTem:LOCK OFF')
-    
+
     def setRemote(self):
         """Set the power supply to REMOTE mode where it is controlled via VISA
         """
@@ -296,7 +296,7 @@ class SCPI(object):
         # Not sure if this is SCPI, but it appears to be supported
         # across different instruments
         self._instWrite('SYSTem:LOCK ON')
-    
+
     def setRemoteLock(self):
         """Set the power supply to REMOTE Lock mode where it is
            controlled via VISA & front panel is locked out
@@ -310,7 +310,7 @@ class SCPI(object):
         """Enable the system beeper for the instrument"""
         # no beeper to turn off, so make it do nothing
         pass
-        
+
     def beeperOff(self):
         """Disable the system beeper for the instrument"""
         # no beeper to turn off, so make it do nothing
@@ -318,7 +318,7 @@ class SCPI(object):
 
     def isOutputOn(self, channel=None):
         """Return true if the output of channel is ON, else false
-        
+
            channel - number of the channel starting at 1
         """
 
@@ -326,15 +326,15 @@ class SCPI(object):
         # current channel
         if channel is not None:
             self.channel = channel
-            
+
         str = 'STATus? {}'.format(self._channelStr(self.channel))
         ret = self._instQuery(str)
         # @@@print("1:", ret)
         return self._1OR0(ret)
-    
+
     def outputOn(self, channel=None, wait=None):
         """Turn on the output for channel
-        
+
            wait    - number of seconds to wait after sending command
            channel - number of the channel starting at 1
         """
@@ -343,19 +343,19 @@ class SCPI(object):
         # current channel
         if channel is not None:
             self.channel = channel
-            
+
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
-            
+
         str = 'VIEW {}'.format(self._channelStr(self.channel))
         self._instWrite(str)
-        sleep(wait)           
-    
+        sleep(wait)
+
     def outputOff(self, channel=None, wait=None):
         """Turn off the output for channel
-        
+
            channel - number of the channel starting at 1
         """
 
@@ -363,19 +363,19 @@ class SCPI(object):
         # current channel
         if channel is not None:
             self.channel = channel
-                    
+
         # If a wait time is NOT passed in, set wait to the
         # default time
         if wait is None:
             wait = self._wait
-            
+
         str = 'BLANK {}'.format(self._channelStr(self.channel))
         self._instWrite(str)
-        sleep(wait)            
-    
+        sleep(wait)
+
     def outputOnAll(self, wait=None):
         """Turn on the output for ALL channels
-        
+
         """
 
         # If a wait time is NOT passed in, set wait to the
@@ -386,12 +386,12 @@ class SCPI(object):
         for chan in range(1,self._max_chan+1):
             str = 'VIEW {}'.format(self._channelStr(chan))
             self._instWrite(str)
-            
+
         sleep(wait)
-    
+
     def outputOffAll(self, wait=None):
         """Turn off the output for ALL channels
-        
+
         """
 
         # If a wait time is NOT passed in, set wait to the
@@ -406,12 +406,12 @@ class SCPI(object):
         # Blank without a parameter turns off ALL sources
         str = 'BLANK'
         self._instWrite(str)
-            
+
         sleep(wait)             # give some time for PS to respond
-        
+
     def measureVoltage(self, channel=None):
         """Read and return a voltage measurement from channel
-        
+
            channel - number of the channel starting at 1
         """
 
@@ -419,10 +419,7 @@ class SCPI(object):
         # current channel
         if channel is not None:
             self.channel = channel
-                    
+
         str = 'INSTrument:NSELect {}; MEASure:VOLTage:DC?'.format(self.channel)
         val = self._instQueryNumber(str)
         return val
-    
-    
-

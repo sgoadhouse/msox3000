@@ -224,9 +224,9 @@ class SCPI(object):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERYIEEEBlock:",queryStr)
-        result = self._inst.query_binary_values(queryStr, datatype='s')
+        result = self._inst.query_binary_values(queryStr, datatype='s', container=bytes)
         self.checkInstErrors(queryStr)
-        return result[0]
+        return result
 
     # =========================================================
     # Based on code from the MSO-X 3000 Programming

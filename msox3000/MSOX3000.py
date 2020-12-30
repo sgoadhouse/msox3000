@@ -40,7 +40,7 @@ from time import sleep
 from datetime import datetime
 from quantiphy import Quantity
 from sys import version_info
-import visa
+import pyvisa as visa
 
 class MSOX3000(SCPI):
     """Basic class for controlling and accessing a HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope"""

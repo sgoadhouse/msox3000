@@ -38,7 +38,7 @@ from __future__ import print_function
 
 from time import sleep
 from sys import version_info
-import visa
+import pyvisa as visa
 
 class SCPI(object):
     """Basic class for controlling and accessing an Oscilloscope with Standard SCPI Commands"""

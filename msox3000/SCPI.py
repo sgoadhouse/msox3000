@@ -98,9 +98,6 @@ class SCPI(object):
 
     @channel.setter
     def channel(self, value):
-        if (value < 1) or (value > self._max_chan):
-            raise ValueError('Invalid channel number: {}. Must be between {} and {}, inclusive.'.
-                                 format(channel, 1, self._max_chan))
         self._curr_chan = value
 
     def _instQuery(self, queryStr, checkErrors=True):
@@ -135,9 +132,12 @@ class SCPI(object):
         return '{}'.format(channel)
 
     def _channelStr(self, channel):
-        """return the channel string given the channel number and using the format CHANnelx"""
+        """return the channel string given the channel number and using the format CHANnelx if x is numeric"""
 
-        return 'CHANnel{}'.format(channel)
+        try:
+            return 'CHANnel{}'.format(int(channel))
+        except ValueError:
+            return self._chanStr(channel)
 
     def _onORoff(self, str):
         """Check if string says it is ON or OFF and return True if ON

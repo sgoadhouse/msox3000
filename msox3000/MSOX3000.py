@@ -1012,6 +1012,11 @@ class MSOX3000(SCPI):
         if channel is not None:
             self.channel = channel
 
+        if self.channel.upper().startswith('POD'):
+            pod = int(self.channel[-1])
+        else:
+            pod = None
+
         # Download waveform data.
         # Set the waveform points mode.
         self._instWrite("WAVeform:POINts:MODE MAX")
@@ -1118,13 +1123,19 @@ class MSOX3000(SCPI):
         myFile = open(filename, 'w')
         with myFile:
             writer = csv.writer(myFile, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
-            writer.writerow(['Time (s)', 'Voltage (V)'])
+            if pod:
+                writer.writerow(['Time (s)'] + ['D{}'.format((pod-1) * 8 + ch) for ch in range(8)])
+            else:
+                writer.writerow(['Time (s)', 'Voltage (V)'])
 
             # Output waveform data in CSV format.
             for i in range(0, nLength - 1):
                 time_val = x_origin + (i * x_increment)
-                voltage = (data_bytes[i] - y_reference) * y_increment + y_origin
-                writer.writerow([time_val, voltage])
+                if pod:
+                    writer.writerow([time_val] + [(data_bytes[i] >> ch) & 1 for ch in range(8)])
+                else:
+                    voltage = (data_bytes[i] - y_reference) * y_increment + y_origin
+                    writer.writerow([time_val, voltage])
 
         if (DEBUG):
             print( "Waveform format BYTE data written to {}.".format(filename) )

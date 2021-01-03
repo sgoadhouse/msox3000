@@ -51,9 +51,6 @@ import argparse
 from datetime import datetime
 from msox3000 import MSOX3000
 
-# Set to the IP address of the oscilloscope
-agilent_msox_3034a = os.environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
-
 def handleFilename(fname, ext, unique=True, timestamp=True):
 
     # If extension exists in fname, strip it and add it back later
@@ -75,7 +72,7 @@ def handleFilename(fname, ext, unique=True, timestamp=True):
 
     if (timestamp):
         # add timestamp suffix
-        fn = fn + '-' + datetime.now().strftime("%Y%m%d-%H%M%S")
+        fn = fn + '-' + datetime.now().strftime("%Y%0m%0d-%0H%0M%0S")
 
     suffix = ''
     if (unique):
@@ -92,31 +89,8 @@ def handleFilename(fname, ext, unique=True, timestamp=True):
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Access Agilent/KeySight MSO3034A scope')
-    parser.add_argument('--hardcopy', '-y', metavar='outfile.png', help='grab hardcopy of scope screen and output to named file as a PNG image')
-    parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), action='append', help='grab waveform data of channel and output to named file as a CSV file')
-    parser.add_argument('--setup_save', '-s', metavar='outfile.stp', help='save the current setup of the oscilloscope into the named file')
-    parser.add_argument('--setup_load', '-l', metavar='infile.stp', help='load the current setup of the oscilloscope from the named file')
-    parser.add_argument('--statistics', '-t', action='store_true', help='dump to the output the current displayed measurements')
-    parser.add_argument('--autoscale', '-u',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
-                            help='cause selected channel to autoscale')
-    parser.add_argument('--dvm', '-d', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
-                            help='measure and output the DVM readings of selected channel')
-    parser.add_argument('--measure', '-m', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
-                            help='measure and output the selected channel')
-    parser.add_argument('--annotate', '-a', nargs='?', metavar='text', const=' ', help='Add annotation text to screen. Clear text if label is blank')
-    parser.add_argument('--annocolor', '-c', nargs=1, metavar='color', 
-                            choices=['ch1', 'ch2', 'ch3', 'ch4', 'dig', 'math', 'ref', 'marker', 'white', 'red'],
-                            help='Set the annotation color to use. Valid values: %(choices)s')
-    parser.add_argument('--label', '-b',  nargs=2, action='append', metavar=('channel', 'label'), 
-                            help='Change label of selected channel')
-
-    # Print help if no options are given on the command line
-    if (len(sys.argv) <= 1):
-        parser.print_help(sys.stderr)
-        sys.exit(1)
-
-    args = parser.parse_args()
+    # Set to the IP address of the oscilloscope
+    agilent_msox_3034a = os.environ.get('MSOX3000_IP', 'TCPIP0::172.16.2.13::INSTR')
     
     ## Connect to the Oscilloscope
     scope = MSOX3000(agilent_msox_3034a)
@@ -325,4 +299,30 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Access Agilent/KeySight MSO3034A scope')
+    parser.add_argument('--hardcopy', '-y', metavar='outfile.png', help='grab hardcopy of scope screen and output to named file as a PNG image')
+    parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), action='append', help='grab waveform data of channel and output to named file as a CSV file')
+    parser.add_argument('--setup_save', '-s', metavar='outfile.stp', help='save the current setup of the oscilloscope into the named file')
+    parser.add_argument('--setup_load', '-l', metavar='infile.stp', help='load the current setup of the oscilloscope from the named file')
+    parser.add_argument('--statistics', '-t', action='store_true', help='dump to the output the current displayed measurements')
+    parser.add_argument('--autoscale', '-u',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='cause selected channel to autoscale')
+    parser.add_argument('--dvm', '-d', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='measure and output the DVM readings of selected channel')
+    parser.add_argument('--measure', '-m', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+                            help='measure and output the selected channel')
+    parser.add_argument('--annotate', '-a', nargs='?', metavar='text', const=' ', help='Add annotation text to screen. Clear text if label is blank')
+    parser.add_argument('--annocolor', '-c', nargs=1, metavar='color', 
+                            choices=['ch1', 'ch2', 'ch3', 'ch4', 'dig', 'math', 'ref', 'marker', 'white', 'red'],
+                            help='Set the annotation color to use. Valid values: %(choices)s')
+    parser.add_argument('--label', '-b',  nargs=2, action='append', metavar=('channel', 'label'), 
+                            help='Change label of selected channel')
+
+    # Print help if no options are given on the command line
+    if (len(sys.argv) <= 1):
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    args = parser.parse_args()
+
     main()

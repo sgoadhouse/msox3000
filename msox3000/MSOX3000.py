@@ -10,10 +10,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
- 
+
 #-------------------------------------------------------------------------------
 #  Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope with PyVISA
 #-------------------------------------------------------------------------------
@@ -35,18 +35,18 @@ try:
     from . import SCPI
 except Exception:
     from SCPI import SCPI
-    
+
 from time import sleep
 from datetime import datetime
 from quantiphy import Quantity
 from sys import version_info
-import visa
+import pyvisa as visa
 
 class MSOX3000(SCPI):
     """Basic class for controlling and accessing a HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope"""
 
     maxChannel = 4
-    
+
     def __init__(self, resource, wait=0):
         """Init the class with the instruments resource string
 
@@ -94,11 +94,11 @@ class MSOX3000(SCPI):
 
         #print('Oscilloscope Setup bytes loaded: {} from "{}"'.format(len(oscopeSetup),filename))
 
-        self._instWriteIEEEBlock("SYSTem:SETup ", oscopeSetup)  
+        self._instWriteIEEEBlock("SYSTem:SETup ", oscopeSetup)
 
         # Return number of bytes saved to file
         return len(oscopeSetup)
-        
+
 
     def setupAutoscale(self, channel=None):
         """ Autoscale desired channel. """
@@ -107,12 +107,12 @@ class MSOX3000(SCPI):
         # current channel
         if channel is not None:
             self.channel = channel
-                    
+
         self._instWrite("AUToscale {}".format(self._channelStr(self.channel)))
 
     def annotate(self, text, color=None, background='TRAN'):
-        """ Add an annotation with text, color and background to screen 
-        
+        """ Add an annotation with text, color and background to screen
+
             text - text of annotation. Can include \n for newlines (two characters)
 
             color - string, one of {CH1 | CH2 | CH3 | CH4 | DIG | MATH | REF | MARK | WHIT | RED}
@@ -127,7 +127,7 @@ class MSOX3000(SCPI):
         self._instWrite("DISPlay:ANN:BACKground {}".format(background))   # transparent background - can also be OPAQue or INVerted
         self._instWrite('DISPlay:ANN:TEXT "{}"'.format(text))
         self._instWrite("DISPlay:ANN ON")
-            
+
     def annotateColor(self, color):
         """ Change screen annotation color """
 
@@ -135,17 +135,17 @@ class MSOX3000(SCPI):
         # {CH1 | CH2 | CH3 | CH4 | DIG | MATH | REF | MARK | WHIT | RED}
         #
         # The scope will respond with an error if an invalid color string is passed along
-        self._instWrite("DISPlay:ANN:COLor {}".format(color)) 
+        self._instWrite("DISPlay:ANN:COLor {}".format(color))
 
     def annotateOff(self):
         """ Turn off screen annotation """
 
         self._instWrite("DISPlay:ANN OFF")
 
-        
+
     def channelLabel(self, label, channel=None):
         """ Add a label to selected channel (or default one if None)
-        
+
             label - text of label
         """
 
@@ -153,16 +153,16 @@ class MSOX3000(SCPI):
         # current channel
         if channel is not None:
             self.channel = channel
-        
+
         self._instWrite('CHAN{}:LABel "{}"'.format(self.channel, label))
         self._instWrite('DISPlay:LABel ON')
-            
+
     def channelLabelOff(self):
         """ Turn off channel labels """
 
         self._instWrite('DISPlay:LABel OFF')
 
-        
+
     def polish(self, value, measure=None):
         """ Using the QuantiPhy package, return a value that is in apparopriate Si units.
 
@@ -171,7 +171,7 @@ class MSOX3000(SCPI):
         If the measure string is None, then no units are used by the SI suffix is.
 
         """
-        
+
         if (value >= SCPI.OverRange):
             pol = '------'
         else:
@@ -180,10 +180,10 @@ class MSOX3000(SCPI):
             except KeyError:
                 # If measure is None or does not exist
                 pol = Quantity(value)
-                            
+
         return pol
-    
-            
+
+
     def measureStatistics(self):
         """Returns an array of dictionaries from the current statistics window.
 
@@ -218,13 +218,13 @@ class MSOX3000(SCPI):
 
         # return the result in an array of dictionaries
         return stats
-    
+
     def _measure(self, mode, para=None, channel=None, wait=0.25, install=False):
         """Read and return a measurement of type mode from channel
-        
+
            para - parameters to be passed to command
 
-           channel - number of the channel to be measured starting at 1 
+           channel - number of the channel to be measured starting at 1
 
            wait - if not None, number of seconds to wait before querying measurement
 
@@ -256,7 +256,7 @@ class MSOX3000(SCPI):
         else:
             strWr = "MEASure:{}".format(mode)
             strQu = "MEASure:{}?".format(mode)
-                
+
         if (install):
             # If desire to install the measurement, make sure the
             # statistics display is on and then use the command form of
@@ -267,7 +267,7 @@ class MSOX3000(SCPI):
         # wait a little before read value, if wait is not None
         if (wait):
             sleep(wait)
-                    
+
         # query the measurement (do not have to install to query it)
         val = self._instQuery(strQu)
 
@@ -293,7 +293,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("BRATe", channel=channel, wait=wait, install=install)
-    
+
     def measureBurstWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the bit rate measurement.
 
@@ -302,7 +302,7 @@ class MSOX3000(SCPI):
 
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
-        
+
         channel: channel number to be measured - default channel for
         future readings
 
@@ -312,7 +312,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("BWIDth", channel=channel, wait=wait, install=install)
-    
+
     def measureCounterFrequency(self, channel=None, wait=0.25, install=False):
         """Measure and return the counter frequency
 
@@ -333,9 +333,9 @@ class MSOX3000(SCPI):
         # first because if COUNTER is installed for ANY channel, this
         # measurement will fail. Note doing the CLEAR, but if COUNTER
         # gets installed, this will fail until it gets manually CLEARed.
-        
+
         return self._measure("COUNter", channel=channel, wait=wait, install=False)
-    
+
     def measurePosDutyCycle(self, channel=None, wait=0.25, install=False):
         """Measure and return the positive duty cycle
 
@@ -359,7 +359,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("DUTYcycle", channel=channel, wait=wait, install=install)
-    
+
     def measureFallTime(self, channel=None, wait=0.25, install=False):
         """Measure and return the fall time
 
@@ -384,7 +384,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("FALLtime", channel=channel, wait=wait, install=install)
-    
+
     def measureRiseTime(self, channel=None, wait=0.25, install=False):
         """Measure and return the rise time
 
@@ -411,7 +411,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("RISetime", channel=channel, wait=wait, install=install)
-    
+
     def measureFrequency(self, channel=None, wait=0.25, install=False):
         """Measure and return the frequency of cycle on screen
 
@@ -430,7 +430,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("FREQ", channel=channel, wait=wait, install=install)
-    
+
     def measureNegDutyCycle(self, channel=None, wait=0.25, install=False):
         """Measure and return the negative duty cycle
 
@@ -454,7 +454,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("NDUTy", channel=channel, wait=wait, install=install)
-    
+
     def measureFallEdgeCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling edge count
 
@@ -473,7 +473,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("NEDGes", channel=channel, wait=wait, install=install)
-    
+
     def measureFallPulseCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling pulse count
 
@@ -492,7 +492,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("NPULses", channel=channel, wait=wait, install=install)
-    
+
     def measureNegPulseWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling/negative pulse width
 
@@ -516,7 +516,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("NWIDth", channel=channel, wait=wait, install=install)
-    
+
     def measureOvershoot(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen voltage overshoot in percent
 
@@ -555,7 +555,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("OVERshoot", channel=channel, wait=wait, install=install)
-    
+
     def measurePreshoot(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen voltage preshoot in percent
 
@@ -594,7 +594,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("PREShoot", channel=channel, wait=wait, install=install)
-    
+
     def measureRiseEdgeCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen rising edge count
 
@@ -613,7 +613,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("PEDGes", channel=channel, wait=wait, install=install)
-    
+
     def measureRisePulseCount(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen rising pulse count
 
@@ -632,7 +632,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("PPULses", channel=channel, wait=wait, install=install)
-    
+
     def measurePosPulseWidth(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen falling/positive pulse width
 
@@ -658,7 +658,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("PWIDth", channel=channel, wait=wait, install=install)
-    
+
     def measurePeriod(self, channel=None, wait=0.25, install=False):
         """Measure and return the on-screen period
 
@@ -684,7 +684,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("PERiod", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltAmplitude(self, channel=None, wait=0.25, install=False):
         """Measure and return the vertical amplitude of the signal
 
@@ -706,7 +706,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VAMPlitude", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltAverage(self, channel=None, wait=0.25, install=False):
         """Measure and return the Average Voltage measurement.
 
@@ -726,7 +726,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VAVerage", para="DISPlay", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltRMS(self, channel=None, wait=0.25, install=False):
         """Measure and return the DC RMS Voltage measurement.
 
@@ -748,7 +748,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VRMS", para="DISPlay", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltBase(self, channel=None, wait=0.25, install=False):
         """Measure and return the Voltage base measurement.
 
@@ -768,7 +768,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VBASe", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltTop(self, channel=None, wait=0.25, install=False):
         """Measure and return the Voltage Top measurement.
 
@@ -788,7 +788,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VTOP", channel=channel, wait=wait, install=install)
-    
+
     def measureVoltMax(self, channel=None, wait=0.25, install=False):
         """Measure and return the Maximum Voltage measurement.
 
@@ -807,7 +807,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VMAX", channel=channel, wait=wait, install=install)
-    
+
 
     def measureVoltMin(self, channel=None, wait=0.25, install=False):
         """Measure and return the Minimum Voltage measurement.
@@ -827,7 +827,7 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VMIN", channel=channel, wait=wait, install=install)
-    
+
 
     def measureVoltPP(self, channel=None, wait=0.25, install=False):
         """Measure and return the voltage peak-to-peak measurement.
@@ -855,10 +855,10 @@ class MSOX3000(SCPI):
         """
 
         return self._measure("VPP", channel=channel, wait=wait, install=install)
-    
+
 
     def _readDVM(self, mode, channel=None, timeout=None, wait=0.5):
-        """Read the DVM data of desired channel and return the value. 
+        """Read the DVM data of desired channel and return the value.
 
         channel: channel number to set to DVM mode and return its
         reading - becomes the default channel for future readings
@@ -900,7 +900,7 @@ class MSOX3000(SCPI):
         # wait a little before read value to make sure everything is switched
         if (wait):
             sleep(wait)
-        
+
         # Read value until get one < +9.9E+37 (per programming guide suggestion)
         startTime = datetime.now()
         val = SCPI.OverRange
@@ -917,7 +917,7 @@ class MSOX3000(SCPI):
         # if mode is frequency, read and return the 5-digit frequency instead
         if (mode == "FREQ"):
             val = self._instQueryNumber("DVM:FREQ?")
-            
+
         return val
 
     def measureDVMacrms(self, channel=None, timeout=None, wait=0.5):
@@ -935,10 +935,10 @@ class MSOX3000(SCPI):
         """
 
         return self._readDVM("ACRM", channel, timeout, wait)
-    
+
     def measureDVMdc(self, channel=None, timeout=None, wait=0.5):
-        """ Measure and return the DC reading of channel using DVM mode. 
-        
+        """ Measure and return the DC reading of channel using DVM mode.
+
         DC is defined as 'the DC value of the acquired data.'
 
         channel: channel number to set to DVM mode and return its
@@ -949,10 +949,10 @@ class MSOX3000(SCPI):
         """
 
         return self._readDVM("DC", channel, timeout, wait)
-    
+
     def measureDVMdcrms(self, channel=None, timeout=None, wait=0.5):
-        """ Measure and return the DC RMS reading of channel using DVM mode. 
-        
+        """ Measure and return the DC RMS reading of channel using DVM mode.
+
         DC RMS is defined as 'the root-mean-square value of the acquired data.'
 
         channel: channel number to set to DVM mode and return its
@@ -963,10 +963,10 @@ class MSOX3000(SCPI):
         """
 
         return self._readDVM("DCRM", channel, timeout, wait)
-    
+
     def measureDVMfreq(self, channel=None, timeout=3, wait=0.5):
-        """ Measure and return the FREQ reading of channel using DVM mode. 
-        
+        """ Measure and return the FREQ reading of channel using DVM mode.
+
         FREQ is defined as 'the frequency counter measurement.'
 
         channel: channel number to set to DVM mode and return its
@@ -980,7 +980,7 @@ class MSOX3000(SCPI):
         """
 
         return self._readDVM("FREQ", channel, timeout, wait)
-    
+
 
     # =========================================================
     # Based on the screen image download example from the MSO-X 3000 Programming
@@ -1011,7 +1011,12 @@ class MSOX3000(SCPI):
         # current channel
         if channel is not None:
             self.channel = channel
-        
+
+        if self.channel.upper().startswith('POD'):
+            pod = int(self.channel[-1])
+        else:
+            pod = None
+
         # Download waveform data.
         # Set the waveform points mode.
         self._instWrite("WAVeform:POINts:MODE MAX")
@@ -1088,7 +1093,7 @@ class MSOX3000(SCPI):
             print( "Waveform average count: {:d}".format((avgcnt)) )
             print( "Waveform X increment: {:1.12f}".format(x_increment) )
             print( "Waveform X origin: {:1.9f}".format(x_origin) )
-            print( "Waveform X reference: {:d}".format((x_reference)) ) # Always 0. 
+            print( "Waveform X reference: {:d}".format((x_reference)) ) # Always 0.
             print( "Waveform Y increment: {:f}".format(y_increment) )
             print( "Waveform Y origin: {:f}".format(y_origin) )
             print( "Waveform Y reference: {:d}".format((y_reference)) ) # Always 125.
@@ -1109,7 +1114,7 @@ class MSOX3000(SCPI):
         else:
             ## If PYTHON 3, waveform_data is already in the correct format
             data_bytes = waveform_data
-        
+
         nLength = len(data_bytes)
         if (DEBUG):
             print( "Number of data values: {:d}".format(nLength) )
@@ -1118,13 +1123,19 @@ class MSOX3000(SCPI):
         myFile = open(filename, 'w')
         with myFile:
             writer = csv.writer(myFile, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
-            writer.writerow(['Time (s)', 'Voltage (V)'])
+            if pod:
+                writer.writerow(['Time (s)'] + ['D{}'.format((pod-1) * 8 + ch) for ch in range(8)])
+            else:
+                writer.writerow(['Time (s)', 'Voltage (V)'])
 
             # Output waveform data in CSV format.
             for i in range(0, nLength - 1):
                 time_val = x_origin + (i * x_increment)
-                voltage = (data_bytes[i] - y_reference) * y_increment + y_origin
-                writer.writerow([time_val, voltage])
+                if pod:
+                    writer.writerow([time_val] + [(data_bytes[i] >> ch) & 1 for ch in range(8)])
+                else:
+                    voltage = (data_bytes[i] - y_reference) * y_increment + y_origin
+                    writer.writerow([time_val, voltage])
 
         if (DEBUG):
             print( "Waveform format BYTE data written to {}.".format(filename) )
@@ -1161,7 +1172,7 @@ class MSOX3000(SCPI):
         'Average - Full Screen': ['V', measureVoltAverage],
         'RMS - Full Screen': ['V', measureVoltRMS],
         }
-            
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Access and control a MSO-X/DSO-X 3000 Oscilloscope')
@@ -1195,21 +1206,21 @@ if __name__ == '__main__':
     # Change label of the channel to "MySig"
     instr._instWrite('CHAN{}:LABel "MySig"'.format(instr.channel))
     instr._instWrite('DISPlay:LABel ON')
-    
+
     # Make sure the statistics display is showing
     instr._instWrite("SYSTem:MENU MEASure")
     instr._instWrite("MEASure:STATistics:DISPlay ON")
-    
+
     ## Save a hardcopy of the screen
     instr.hardcopy('outfile.png')
 
     # Change label back to the default
     instr._instWrite('CHAN{}:LABel "{}"'.format(instr.channel, instr.channel))
     instr._instWrite('DISPlay:LABel OFF')
-    
+
     # Turn off the annotation
     instr._instWrite("DISPlay:ANN OFF")
-    
+
     ## Read ALL available measurements from channel, without installing
     ## to statistics display, with units
     print('\nMeasurements for Ch. {}:'.format(instr.channel))
@@ -1222,7 +1233,7 @@ if __name__ == '__main__':
                     'Neg Duty',
                     '+ Width',
                     '- Width',
-                    'Rise Time',                            
+                    'Rise Time',
                     'Num Rising',
                     'Num Pos Pulses',
                     'Fall Time',
@@ -1241,7 +1252,7 @@ if __name__ == '__main__':
                     'RMS - Full Screen',
                     ]
     for meas in measurements:
-        if (meas is ''):
+        if (meas == ''):
             # use a blank string to put in an extra line
             print()
         else:
@@ -1250,11 +1261,11 @@ if __name__ == '__main__':
             # the same measurement name, pass it to the polish() method
             # to format the data with units and SI suffix.
             print('{: <24} {:>12.6}'.format(meas,instr.polish(MSOX3000.measureTbl[meas][1](instr), meas)))
-        
+
     ## turn off the channel
     instr.outputOff()
 
     ## return to LOCAL mode
     instr.setLocal()
-    
+
     instr.close()

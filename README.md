@@ -41,7 +41,7 @@ pip install msox3000
 
 ## Requirements
 * [python](http://www.python.org/)
- * pyvisa no longer supports python 2.7+ so neither does this package - use older version of MSOX3000 if need python 2.7+
+   * pyvisa no longer supports python 2.7+ so neither does this package - use older version of MSOX3000 if need python 2.7+
 * [pyvisa 1.11.3](https://pyvisa.readthedocs.io/en/stable/)
 * [pyvisa-py 0.5.1](https://pyvisa-py.readthedocs.io/en/latest/) 
 * [argparse](https://docs.python.org/3/library/argparse.html) 

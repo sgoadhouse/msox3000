@@ -1247,7 +1247,7 @@ if __name__ == '__main__':
 
     # set the channel (can pass channel to each method or just set it
     # once and it becomes the default for all following calls)
-    instr.channel = args.chan
+    instr.channel = str(args.chan)
 
     if not instr.isOutputOn():
         instr.outputOn()

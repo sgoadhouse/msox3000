@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018,2019,2020,2021, Stephen Goadhouse <sgoadhouse@virginia.edu>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

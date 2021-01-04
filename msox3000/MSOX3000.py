@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018,2019,2020,2021, Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -119,7 +119,7 @@ class MSOX3000(SCPI):
 
         # Make channel a list even if it is a single value
         if type(self.channel) is not list:
-            chanlist = list(self.channel)
+            chanlist = [self.channel]
         else:
             chanlist = self.channel
 

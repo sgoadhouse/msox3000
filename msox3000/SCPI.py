@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 
-# Copyright (c) 2018, Stephen Goadhouse <sgoadhouse@virginia.edu>
+# Copyright (c) 2018,2019,2020,2021 Stephen Goadhouse <sgoadhouse@virginia.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal

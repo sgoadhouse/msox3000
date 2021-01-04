@@ -136,7 +136,7 @@ instr.open()
 # once and it becomes the default for all following calls. If pass the
 # channel to a Class method call, it will become the default for
 # following method calls.
-instr.channel = 1
+instr.channel = '1'
 
 # Enable output of channel, if it is not already enabled
 if not instr.isOutputOn():

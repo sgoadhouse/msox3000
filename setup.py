@@ -15,7 +15,7 @@ except(IOError, ImportError):
 
 
 setup(name="msox3000", 
-      version='0.3.1',
+      version='0.4.0',
       description='Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope through python via PyVisa',
       long_description=long_description,
       url='https://github.com/sgoadhouse/msox3000',
@@ -37,7 +37,12 @@ setup(name="msox3000",
         'Topic :: Software Development',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'], 
-     install_requires=['pyvisa', 'pyvisa-py', 'argparse', 'QuantiPhy'],
+     install_requires=[
+         'pyvisa>=1.11.3',
+         'pyvisa-py>=0.5.1',
+         'argparse',
+         'QuantiPhy>=2.3.0'
+     ],
      packages=["msox3000"],
      include_package_data=True,
      zip_safe=False

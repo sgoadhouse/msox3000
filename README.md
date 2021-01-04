@@ -11,7 +11,7 @@ other oscilloscopes, then will create a new project but at least this
 one would have started with that in mind.
 
 It may also work on the MSO-X/DSO-X 2000A oscilloscope
-but I have not looked into the differences ot know for sure. Try it
+but I have not looked into the differences to know for sure. Try it
 out and let me know.
 
 Like dcps, this will use the brilliant PyVISA python package along
@@ -41,8 +41,8 @@ pip install msox3000
 
 ## Requirements
 * [python](http://www.python.org/) [Works with 2.7+ and 3+]
-* [pyvisa 1.9](https://pyvisa.readthedocs.io/en/stable/)
-* [pyvisa-py 0.2](https://pyvisa-py.readthedocs.io/en/latest/) 
+* [pyvisa 1.11.3](https://pyvisa.readthedocs.io/en/stable/)
+* [pyvisa-py 0.5.1](https://pyvisa-py.readthedocs.io/en/latest/) 
 * [argparse](https://docs.python.org/3/library/argparse.html) 
 * [quantiphy 2.3.0](http://quantiphy.readthedocs.io/en/stable/) 
 
@@ -65,18 +65,18 @@ from the computer which are easy to create and update.
 
 Currently, this is a list of the features that are supported so far:
 
-* Only the analog channels are supported
+* The only supported channels are the analog channels, '1', '2', etc., as well as 'POD1' for digital 0-7 and 'POD2' for digital 8-15
 * Reading of all available single channel measurements 
 * Reading of all available DVM measurements 
 * Installing measurements to statistics display
 * Reading data from statistics display
 * Screen Hardcopy to PNG image file
-* Reading actual waveform data to a csv file
+* Reading actual waveform data to a csv file including for 'POD1' and 'POD2'
 * Saving oscilloscope setup to a file
 * Loading oscilloscope setup from saved file
-* Issuing Autoscale for a channel
+* Issuing Autoscale for channel(s) for all analog as well as 'POD1' and 'POD2' 
 * Screen Annotation
-* Channel Labels
+* Channel Labels for only the analog channels
 
 It is expected that new interfaces will be added over time to control
 and automate the oscilloscope. The key features that would be good to
@@ -98,6 +98,16 @@ the desired resource string before running the code. If not using
 ethernet to access your device, search online for the proper resource
 string needed to access your device.
 
+## Channels
+Almost all functions require a target channel. Once a channel is passed into a function, the object will remember it and make it the default for all subsequence function calls that do not supply a channel. The channel value is a string or can also be a list of strings, in the case of setupAutoscale(). Currently, the valid channel values are:
+* '1' for analog channel 1
+* '2' for analog channel 2
+* '3' for analog channel 3 if it exists on the oscilloscope
+* '4' for analog channel 4 if it exists on the oscilloscope
+* 'POD1' for the grouping of digital channels 0-7 on a MSO model
+* 'POD2' for the grouping of digital channels 8-15 on a MSO model
+
+## Examples
 For more detailed examples, see:
 
 ```

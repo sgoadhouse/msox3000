@@ -100,26 +100,30 @@ def main():
 
     if (args.dvm):
         for lst in args.dvm:
-            chan = lst[0]
-            acrms = scope.measureDVMacrms(chan)
-            dc = scope.measureDVMdc(chan)
-            dcrms = scope.measureDVMdcrms(chan)
-            freq = scope.measureDVMfreq(chan)
+            try:
+                chan = lst[0]
+                acrms = scope.measureDVMacrms(chan)
+                dc = scope.measureDVMdc(chan)
+                dcrms = scope.measureDVMdcrms(chan)
+                freq = scope.measureDVMfreq(chan)
 
-            if (acrms >= MSOX3000.OverRange):
-                acrms = 'INVALID '
-            if (dc >= MSOX3000.OverRange):
-                dc = 'INVALID '
-            if (dcrms >= MSOX3000.OverRange):
-                dcrms = 'INVALID '
-            if (freq >= MSOX3000.OverRange):
-                freq = 'INVALID '
+                if (acrms >= MSOX3000.OverRange):
+                    acrms = 'INVALID '
+                if (dc >= MSOX3000.OverRange):
+                    dc = 'INVALID '
+                if (dcrms >= MSOX3000.OverRange):
+                    dcrms = 'INVALID '
+                if (freq >= MSOX3000.OverRange):
+                    freq = 'INVALID '
             
-            print("Ch.{}: {: 7.5f}V ACRMS".format(chan,acrms))
-            print("Ch.{}: {: 7.5f}V DC".format(chan,dc))
-            print("Ch.{}: {: 7.5f}V DCRMS".format(chan,dcrms))
-            print("Ch.{}: {}Hz FREQ".format(chan,freq))
+                print("Ch.{}: {: 7.5f}V ACRMS".format(chan,acrms))
+                print("Ch.{}: {: 7.5f}V DC".format(chan,dc))
+                print("Ch.{}: {: 7.5f}V DCRMS".format(chan,dcrms))
+                print("Ch.{}: {}Hz FREQ".format(chan,freq))
 
+            except ValueError as exp:
+                print(exp)
+                
     if (args.statistics):
         stats = scope.measureStatistics()
 
@@ -140,49 +144,53 @@ def main():
         
     if (args.measure):        
         for lst in args.measure:
-            chan = lst[0]
+            try:
+                chan = lst[0]
 
-            print('\nNOTE: If returned value is >= {}, then it is to be considered INVALID'.format(MSOX3000.OverRange))
-            print('\nMeasurements for Ch. {}:'.format(chan))
-            measurements = ['Bit Rate',
-                            'Burst Width',
-                            'Counter Freq',
-                            'Frequency',
-                            'Period',
-                            'Duty',
-                            'Neg Duty',
-                            '+ Width',
-                            '- Width',
-                            'Rise Time',                            
-                            'Num Rising',
-                            'Num Pos Pulses',
-                            'Fall Time',
-                            'Num Falling',
-                            'Num Neg Pulses',
-                            'Overshoot',
-                            'Preshoot',
-                            '',
-                            'Amplitude',
-                            'Pk-Pk',
-                            'Top',
-                            'Base',
-                            'Maximum',
-                            'Minimum',
-                            'Average - Full Screen',
-                            'RMS - Full Screen',
-                           ]
-            for meas in measurements:
-                if (meas is ''):
-                    # use a blank string to put in an extra line
-                    print()
-                else:
-                    # using MSOX3000.measureTbl[] dictionary, call the
-                    # appropriate method to read the
-                    # measurement. Also, using the same measurement
-                    # name, pass it to the polish() method to format
-                    # the data with units and SI suffix.
-                    print('{: <24} {:>12.6}'.format(meas,scope.polish(MSOX3000.measureTbl[meas][1](scope, chan), meas)))
-                                    
+                print('\nNOTE: If returned value is >= {}, then it is to be considered INVALID'.format(MSOX3000.OverRange))
+                print('\nMeasurements for Ch. {}:'.format(chan))
+                measurements = ['Bit Rate',
+                                'Burst Width',
+                                'Counter Freq',
+                                'Frequency',
+                                'Period',
+                                'Duty',
+                                'Neg Duty',
+                                '+ Width',
+                                '- Width',
+                                'Rise Time',                            
+                                'Num Rising',
+                                'Num Pos Pulses',
+                                'Fall Time',
+                                'Num Falling',
+                                'Num Neg Pulses',
+                                'Overshoot',
+                                'Preshoot',
+                                '',
+                                'Amplitude',
+                                'Pk-Pk',
+                                'Top',
+                                'Base',
+                                'Maximum',
+                                'Minimum',
+                                'Average - Full Screen',
+                                'RMS - Full Screen',
+                ]
+                for meas in measurements:
+                    if (meas is ''):
+                        # use a blank string to put in an extra line
+                        print()
+                    else:
+                        # using MSOX3000.measureTbl[] dictionary, call the
+                        # appropriate method to read the
+                        # measurement. Also, using the same measurement
+                        # name, pass it to the polish() method to format
+                        # the data with units and SI suffix.
+                        print('{: <24} {:>12.6}'.format(meas,scope.polish(MSOX3000.measureTbl[meas][1](scope, chan), meas)))
+
+            except ValueError as exp:
+                print(exp)
+                        
     if (args.annotate):
         text = args.annotate
 
@@ -204,15 +212,10 @@ def main():
     if (args.label):
         # step through all label options
         for nxt in args.label:
-            # check the channel number
             try:
-                channel = int(nxt[0])
-                if (channel >= 1 and channel <= MSOX3000.maxChannel):
-                    scope.channelLabel(nxt[1], channel=channel)
-                else:
-                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
-            except ValueError:
-                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
+                scope.channelLabel(nxt[1], channel=nxt[0])
+            except ValueError as exp:
+                print(exp)
                         
     if (args.hardcopy):
         fn = handleFilename(args.hardcopy, 'png')
@@ -222,17 +225,17 @@ def main():
 
     if (args.waveform):
         for nxt in args.waveform:
-            # check the channel
             try:
-                channel = int(nxt[0])
-                if (channel >= 1 and channel <= MSOX3000.maxChannel):
+                # check the channel
+                channel = nxt[0]
+                if (channel in MSOX3000.chanAllValidList):
                     fn = handleFilename(nxt[1], 'csv')
                     dataLen = scope.waveform(fn, channel)
                     print("Waveform Output of Channel {} in {} points to file {}".format(channel,dataLen,fn))
                 else:
-                    print('INVALID Channel Number: {}  SKIPPING!'.format(channel))
-            except ValueError:
-                    print('INVALID Channel Number: "{}"  SKIPPING!'.format(nxt[0]))
+                    print('INVALID Channel Value: {}  SKIPPING!'.format(channel))
+            except ValueError as exp:
+                print(exp)
                         
     if (args.setup_save):
         fn = handleFilename(args.setup_save, 'stp')
@@ -250,9 +253,11 @@ def main():
             print("Oscilloscope Setup bytes loaded: {} from '{}'".format(dataLen,fn) )
 
     if (args.autoscale):
-        for chan in args.autoscale:
-            scope.setupAutoscale(chan[0])
-                                    
+        try:
+            scope.setupAutoscale([x[0] for x in args.autoscale])
+        except ValueError as exp:
+            print(exp)
+                
     # a simple test of enabling/disabling the channels
     if False:
         wait = 0.5 # just so can see if happen
@@ -301,22 +306,23 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Access Agilent/KeySight MSO3034A scope')
     parser.add_argument('--hardcopy', '-y', metavar='outfile.png', help='grab hardcopy of scope screen and output to named file as a PNG image')
-    parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), action='append', help='grab waveform data of channel and output to named file as a CSV file')
+    parser.add_argument('--waveform', '-w', nargs=2, metavar=('channel', 'outfile.csv'), action='append',
+                        help='grab waveform data of channel ('+ str(MSOX3000.chanAllValidList).strip('[]') + ') and output to named file as a CSV file')
     parser.add_argument('--setup_save', '-s', metavar='outfile.stp', help='save the current setup of the oscilloscope into the named file')
     parser.add_argument('--setup_load', '-l', metavar='infile.stp', help='load the current setup of the oscilloscope from the named file')
     parser.add_argument('--statistics', '-t', action='store_true', help='dump to the output the current displayed measurements')
-    parser.add_argument('--autoscale', '-u',  nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+    parser.add_argument('--autoscale', '-u',  nargs=1, action='append', choices=MSOX3000.chanAllValidList,
                             help='cause selected channel to autoscale')
-    parser.add_argument('--dvm', '-d', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+    parser.add_argument('--dvm', '-d', nargs=1, action='append', choices=MSOX3000.chanAnaValidList,
                             help='measure and output the DVM readings of selected channel')
-    parser.add_argument('--measure', '-m', nargs=1, action='append', metavar='channel', type=int, choices=range(1,MSOX3000.maxChannel+1),
+    parser.add_argument('--measure', '-m', nargs=1, action='append', choices=MSOX3000.chanAnaValidList,
                             help='measure and output the selected channel')
     parser.add_argument('--annotate', '-a', nargs='?', metavar='text', const=' ', help='Add annotation text to screen. Clear text if label is blank')
     parser.add_argument('--annocolor', '-c', nargs=1, metavar='color', 
                             choices=['ch1', 'ch2', 'ch3', 'ch4', 'dig', 'math', 'ref', 'marker', 'white', 'red'],
                             help='Set the annotation color to use. Valid values: %(choices)s')
     parser.add_argument('--label', '-b',  nargs=2, action='append', metavar=('channel', 'label'), 
-                            help='Change label of selected channel')
+                            help='Change label of selected channel (' + str(MSOX3000.chanAnaValidList).strip('[]') + ')')
 
     # Print help if no options are given on the command line
     if (len(sys.argv) <= 1):

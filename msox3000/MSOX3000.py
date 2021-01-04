@@ -47,6 +47,16 @@ class MSOX3000(SCPI):
 
     maxChannel = 4
 
+    # Return list of ALL valid channel strings.
+    #
+    # NOTE: Currently, only valid values are a numerical string for
+    # the analog channels, POD1 for digital channels 0-7 or POD2 for
+    # digital channels 8-15
+    chanAllValidList = [str(x) for x in range(1,maxChannel+1)]+['POD1','POD2']
+        
+    # Return list of valid analog channel strings.
+    chanAnaValidList = [str(x) for x in range(1,maxChannel+1)]
+
     def __init__(self, resource, wait=0):
         """Init the class with the instruments resource string
 
@@ -59,8 +69,7 @@ class MSOX3000(SCPI):
                                        read_termination='',
                                        write_termination='\n'
                                       )
-
-
+        
     # =========================================================
     # Based on the save oscilloscope setup example from the MSO-X 3000 Programming
     # Guide and modified to work within this class ...
@@ -101,14 +110,33 @@ class MSOX3000(SCPI):
 
 
     def setupAutoscale(self, channel=None):
-        """ Autoscale desired channel. """
+        """ Autoscale desired channel, which is a string. channel can also be a list of multiple strings"""
 
-        # If a channel number is passed in, make it the
+        # If a channel value is passed in, make it the
         # current channel
         if channel is not None:
             self.channel = channel
 
-        self._instWrite("AUToscale {}".format(self._channelStr(self.channel)))
+        # Make channel a list even if it is a single value
+        if type(self.channel) is not list:
+            chanlist = list(self.channel)
+        else:
+            chanlist = self.channel
+
+        # chanlist cannot have more than 5 elements
+        if (len(chanlist) > 5):
+            raise ValueError('Too many channels for AUTOSCALE! Max is 5. Aborting')
+            
+        chanstr = ''
+        for chan in chanlist:                        
+            # Check channel value
+            if (chan not in MSOX3000.chanAllValidList):
+                raise ValueError('INVALID Channel Value for AUTOSCALE: {}  SKIPPING!'.format(chan))
+            else:
+                chanstr += ',' + self._channelStr(chan)
+
+        # remove the leading ',' when creating the command string with '[1:]'        
+        self._instWrite("AUToscale " + chanstr[1:])
 
     def annotate(self, text, color=None, background='TRAN'):
         """ Add an annotation with text, color and background to screen
@@ -149,11 +177,19 @@ class MSOX3000(SCPI):
             label - text of label
         """
 
-        # If a channel number is passed in, make it the
+        # If a channel value is passed in, make it the
         # current channel
-        if channel is not None:
+        if channel is not None and type(channel) is not list:
             self.channel = channel
 
+        # Make sure channel is NOT a list
+        if type(self.channel) is list or type(channel) is list:
+            raise ValueError('Channel cannot be a list for CHANNEL LABEL!')
+
+        # Check channel value
+        if (self.channel not in MSOX3000.chanAnaValidList):
+            raise ValueError('INVALID Channel Value for CHANNEL LABEL: {}  SKIPPING!'.format(self.channel))
+            
         self._instWrite('CHAN{}:LABel "{}"'.format(self.channel, label))
         self._instWrite('DISPlay:LABel ON')
 
@@ -224,18 +260,26 @@ class MSOX3000(SCPI):
 
            para - parameters to be passed to command
 
-           channel - number of the channel to be measured starting at 1
+           channel - channel to be measured starting at 1. Must be a string, ie. '1'
 
            wait - if not None, number of seconds to wait before querying measurement
 
            install - if True, adds measurement to the statistics display
         """
 
-        # If a channel number is passed in, make it the
+        # If a channel value is passed in, make it the
         # current channel
-        if channel is not None:
+        if channel is not None and type(channel) is not list:
             self.channel = channel
 
+        # Make sure channel is NOT a list
+        if type(self.channel) is list or type(channel) is list:
+            raise ValueError('Channel cannot be a list for MEASURE!')
+
+        # Check channel value
+        if (self.channel not in MSOX3000.chanAnaValidList):
+            raise ValueError('INVALID Channel Value for MEASURE: {}  SKIPPING!'.format(self.channel))
+            
         # Next check if desired channel is the source, if not switch it
         #
         # NOTE: doing it this way so as to not possibly break the
@@ -245,7 +289,7 @@ class MSOX3000(SCPI):
         src = self._instQuery("MEASure:SOURce?")
         #print("Source: {}".format(src))
         if (self._chanNumber(src) != self.channel):
-            # Different channel number so switch it
+            # Different channel so switch it
             #print("Switching to {}".format(self.channel))
             self._instWrite("MEASure:SOURce {}".format(self._channelStr(self.channel)))
 
@@ -284,12 +328,13 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
         install - if True, adds measurement to the statistics display
+
         """
 
         return self._measure("BRATe", channel=channel, wait=wait, install=install)
@@ -303,8 +348,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -321,8 +366,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -350,8 +395,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -375,8 +420,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -402,8 +447,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -421,8 +466,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -445,8 +490,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -464,8 +509,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -483,8 +528,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -507,8 +552,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -546,8 +591,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -585,8 +630,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -604,8 +649,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -623,8 +668,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -649,8 +694,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -675,8 +720,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -697,8 +742,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -717,8 +762,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -739,8 +784,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -759,8 +804,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -779,8 +824,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -798,8 +843,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -818,8 +863,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -846,8 +891,8 @@ class MSOX3000(SCPI):
         If the returned value is >= SCPI.OverRange, then no valid value
         could be measured.
 
-        channel: channel number to be measured - default channel for
-        future readings
+        channel: channel, as string, to be measured - default channel
+        for future readings
 
         wait - if not None, number of seconds to wait before querying measurement
 
@@ -860,7 +905,7 @@ class MSOX3000(SCPI):
     def _readDVM(self, mode, channel=None, timeout=None, wait=0.5):
         """Read the DVM data of desired channel and return the value.
 
-        channel: channel number to set to DVM mode and return its
+        channel: channel, as a string, to set to DVM mode and return its
         reading - becomes the default channel for future readings
 
         timeout: if None, no timeout, otherwise, time-out in seconds
@@ -870,11 +915,19 @@ class MSOX3000(SCPI):
         read values. Set to None for no waiting (not recommended)
         """
 
-        # If a channel number is passed in, make it the
+        # If a channel value is passed in, make it the
         # current channel
-        if channel is not None:
+        if channel is not None and type(channel) is not list:
             self.channel = channel
 
+        # Make sure channel is NOT a list
+        if type(self.channel) is list or type(channel) is list:
+            raise ValueError('Channel cannot be a list for DVM!')
+
+        # Check channel value
+        if (self.channel not in MSOX3000.chanAnaValidList):
+            raise ValueError('INVALID Channel Value for DVM: {}  SKIPPING!'.format(self.channel))
+            
         # First check if DVM is enabled
         en = self._instQuery("DVM:ENABle?")
         if (not self._1OR0(en)):
@@ -890,7 +943,7 @@ class MSOX3000(SCPI):
         src = self._instQuery("DVM:SOURce?")
         #print("Source: {}".format(src))
         if (self._chanNumber(src) != self.channel):
-            # Different channel number so switch it
+            # Different channel value so switch it
             #print("Switching to {}".format(self.channel))
             self._instWrite("DVM:SOURce {}".format(self._channelStr(self.channel)))
 
@@ -927,7 +980,7 @@ class MSOX3000(SCPI):
         AC RMS is defined as 'the root-mean-square value of the acquired
         data, with the DC component removed.'
 
-        channel: channel number to set to DVM mode and return its
+        channel: channel, as a string, to set to DVM mode and return its
         reading - becomes the default channel for future readings
 
         timeout: if None, no timeout, otherwise, time-out in seconds
@@ -941,7 +994,7 @@ class MSOX3000(SCPI):
 
         DC is defined as 'the DC value of the acquired data.'
 
-        channel: channel number to set to DVM mode and return its
+        channel: channel, as a string, to set to DVM mode and return its
         reading - becomes the default channel for future readings
 
         timeout: if None, no timeout, otherwise, time-out in seconds
@@ -955,7 +1008,7 @@ class MSOX3000(SCPI):
 
         DC RMS is defined as 'the root-mean-square value of the acquired data.'
 
-        channel: channel number to set to DVM mode and return its
+        channel: channel, as a string, to set to DVM mode and return its
         reading - becomes the default channel for future readings
 
         timeout: if None, no timeout, otherwise, time-out in seconds
@@ -969,7 +1022,7 @@ class MSOX3000(SCPI):
 
         FREQ is defined as 'the frequency counter measurement.'
 
-        channel: channel number to set to DVM mode and return its
+        channel: channel, as a string, to set to DVM mode and return its
         reading - becomes the default channel for future readings
 
         timeout: if None, no timeout, otherwise, time-out in seconds
@@ -1007,11 +1060,19 @@ class MSOX3000(SCPI):
         DEBUG = False
         import csv
 
-        # If a channel number is passed in, make it the
+        # If a channel value is passed in, make it the
         # current channel
-        if channel is not None:
+        if channel is not None and type(channel) is not list:
             self.channel = channel
 
+        # Make sure channel is NOT a list
+        if type(self.channel) is list or type(channel) is list:
+            raise ValueError('Channel cannot be a list for WAVEFORM!')
+
+        # Check channel value
+        if (self.channel not in MSOX3000.chanAllValidList):
+            raise ValueError('INVALID Channel Value for WAVEFORM: {}  SKIPPING!'.format(self.channel))            
+            
         if self.channel.upper().startswith('POD'):
             pod = int(self.channel[-1])
         else:

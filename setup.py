@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 #from distutils.core import setup
-from setuptools import setup
+import setuptools
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-setup(name="msox3000", 
+setuptools.setup(name="msox3000", 
       version='0.4.0',
       description='Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope through python via PyVisa',
       long_description=long_description,

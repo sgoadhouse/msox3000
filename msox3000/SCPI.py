@@ -55,7 +55,7 @@ class SCPI(object):
         """Init the class with the instruments resource string
 
         resource   - resource string or VISA descriptor, like TCPIP0::172.16.2.13::INSTR
-        max_chan   - number of channels in power supply
+        max_chan   - number of channels
         wait       - float that gives the default number of seconds to wait after sending each command
         cmd_prefix - optional command prefix (ie. some instruments require a ':' prefix)
         read_strip        - optional read_strip parameter used to strip any returned termination characters

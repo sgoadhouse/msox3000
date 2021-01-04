@@ -40,7 +40,8 @@ pip install msox3000
 ```
 
 ## Requirements
-* [python](http://www.python.org/) [Works with 2.7+ and 3+]
+* [python](http://www.python.org/)
+ * pyvisa no longer supports python 2.7+ so neither does this package - use older version of MSOX3000 if need python 2.7+
 * [pyvisa 1.11.3](https://pyvisa.readthedocs.io/en/stable/)
 * [pyvisa-py 0.5.1](https://pyvisa-py.readthedocs.io/en/latest/) 
 * [argparse](https://docs.python.org/3/library/argparse.html) 
@@ -84,7 +85,16 @@ add next are: support for Digital/Math/etc. channels, run/stop
 control, trigger setup, horizontal and vertical scale control, zoom
 control
 
-## Usage
+## Channels
+Almost all functions require a target channel. Once a channel is passed into a function, the object will remember it and make it the default for all subsequence function calls that do not supply a channel. The channel value is a string or can also be a list of strings, in the case of setupAutoscale(). Currently, the valid channel values are:
+* '1' for analog channel 1
+* '2' for analog channel 2
+* '3' for analog channel 3 if it exists on the oscilloscope
+* '4' for analog channel 4 if it exists on the oscilloscope
+* 'POD1' for the grouping of digital channels 0-7 on a MSO model
+* 'POD2' for the grouping of digital channels 8-15 on a MSO model
+
+## Usage and Examples
 The code is a basic class for controlling and accessing the
 supported oscilloscopes.
 
@@ -98,16 +108,6 @@ the desired resource string before running the code. If not using
 ethernet to access your device, search online for the proper resource
 string needed to access your device.
 
-## Channels
-Almost all functions require a target channel. Once a channel is passed into a function, the object will remember it and make it the default for all subsequence function calls that do not supply a channel. The channel value is a string or can also be a list of strings, in the case of setupAutoscale(). Currently, the valid channel values are:
-* '1' for analog channel 1
-* '2' for analog channel 2
-* '3' for analog channel 3 if it exists on the oscilloscope
-* '4' for analog channel 4 if it exists on the oscilloscope
-* 'POD1' for the grouping of digital channels 0-7 on a MSO model
-* 'POD2' for the grouping of digital channels 8-15 on a MSO model
-
-## Examples
 For more detailed examples, see:
 
 ```

@@ -3,21 +3,14 @@
 #from distutils.core import setup
 from setuptools import setup
 
-def readme():
-    with open('README.md') as f:
-        return f.read()
-
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError):
-    long_description = open('README.md').read()
-
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(name="msox3000", 
       version='0.4.0',
       description='Control of HP/Agilent/Keysight MSO-X/DSO-X 3000A Oscilloscope through python via PyVisa',
       long_description=long_description,
+      long_description_content_type="text/markdown",
       url='https://github.com/sgoadhouse/msox3000',
       author='Stephen Goadhouse', 
       author_email="sgoadhouse@virginia.edu",
@@ -43,7 +36,8 @@ setup(name="msox3000",
          'argparse',
          'QuantiPhy>=2.3.0'
      ],
-     packages=["msox3000"],
+     python_requires='>=3.6',
+     packages=setuptools.find_packages(),
      include_package_data=True,
      zip_safe=False
 )

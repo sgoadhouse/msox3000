@@ -38,6 +38,7 @@ from __future__ import print_function
 
 from time import sleep
 from sys import version_info
+from sys import exit
 import pyvisa as visa
 
 class SCPI(object):
@@ -45,7 +46,8 @@ class SCPI(object):
 
     OverRange = +9.9E+37                  # Number which indicates Over Range
     UnderRange = -9.9E+37                 # Number which indicates Under Range
-
+    ErrorQueue = 30                       # Size of error queue
+    
     def __init__(self, resource, max_chan=1, wait=0,
                      cmd_prefix = '',
                      read_strip = '',
@@ -71,6 +73,7 @@ class SCPI(object):
         self._read_termination = read_termination
         self._write_termination = write_termination
         self._timeout = timeout
+        self._version = 0.0     # set software versino to lowest value until it gets set
         self._inst = None
 
     def open(self):
@@ -81,13 +84,21 @@ class SCPI(object):
                                             write_termination=self._write_termination)
         self._inst.timeout = self._timeout
 
-        # Keysight recommends using clear() but it is currently not implemented in pyvisa-py v0.2
-        # self._inst.clear()
+        # Keysight recommends using clear()
         #
-        # Instead, send a *CLS system command to at least clear the command
+        # NOTE: must use pyvisa-py >= 0.5.0 to get this implementation
+        self._inst.clear()
+
+        # Read software version number so can deviate operation based
+        # on changes to commands over history (WHY did they make changes?)
+        # MUST be done before below clear() which sends first command.
+        self._getVersion()
+
+        # Also, send a *CLS system command to clear the command
         # handler (error queues and such)
         self.clear()
 
+        
     def close(self):
         """Close the VISA connection"""
         self._inst.close()
@@ -104,7 +115,14 @@ class SCPI(object):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERY:",queryStr)
-        result = self._inst.query(queryStr)
+        try:
+            result = self._inst.query(queryStr)
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(queryStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+            
         if checkErrors:
             self.checkInstErrors(queryStr)
         return result.rstrip(self._read_strip)
@@ -116,7 +134,14 @@ class SCPI(object):
         if (writeStr[0] != '*'):
             writeStr = self._prefix + writeStr
         #print("WRITE:",writeStr)
-        result = self._inst.write(writeStr)
+        try:
+            result = self._inst.write(writeStr)
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(writeStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+
         if checkErrors:
             self.checkInstErrors(writeStr)
         return result
@@ -187,20 +212,32 @@ class SCPI(object):
     # =========================================================
     # Taken from the MSO-X 3000 Programming Guide and modified to work
     # within this class ...
+    #    
+    # UPDATE: Apparently "SYSTem:ERRor?" has changed but the
+    # documentation is unclear so will make it work as it works on
+    # MXR058A with v11.10
     # =========================================================
     # Check for instrument errors:
     # =========================================================
     def checkInstErrors(self, commandStr):
 
+        if (self._version > 3.10):
+            cmd = "SYSTem:ERRor? STR"
+            noerr = ("0,", 0, 2)
+        else:
+            cmd = "SYSTem:ERRor?"
+            noerr = ("+0,", 0, 3)
+            
         errors = False
-        while True:
+        # No need to read more times that the size of the Error Queue
+        for reads in range(0,self.ErrorQueue):
             # checkErrors=False prevents infinite recursion!
-            error_string = self._instQuery("SYSTem:ERRor?", checkErrors=False)
+            error_string = self._instQuery(cmd, checkErrors=False)
             error_string = error_string.strip()  # remove trailing and leading whitespace
             if error_string: # If there is an error string value.
-                if error_string.find("+0,", 0, 3) == -1:
+                if error_string.find(*noerr) == -1:
                     # Not "No error".
-                    print("ERROR: {}, command: '{}'".format(error_string, commandStr))
+                    print("ERROR({:02d}): {}, command: '{}'".format(reads, error_string, commandStr))
                     #print "Exited because of error."
                     #sys.exit(1)
                     errors = True           # indicate there was an error
@@ -224,7 +261,14 @@ class SCPI(object):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERYIEEEBlock:",queryStr)
-        result = self._inst.query_binary_values(queryStr, datatype='s', container=bytes)
+        try:
+            result = self._inst.query_binary_values(queryStr, datatype='s', container=bytes)
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(queryStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+            
         self.checkInstErrors(queryStr)
         return result
 
@@ -236,7 +280,14 @@ class SCPI(object):
         if (queryStr[0] != '*'):
             queryStr = self._prefix + queryStr
         #print("QUERYNumbers:",queryStr)
-        result = self._inst.query_ascii_values(queryStr, converter='f', separator=',')
+        try:
+            result = self._inst.query_ascii_values(queryStr, converter='f', separator=',')
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(queryStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+            
         self.checkInstErrors(queryStr)
         return result
 
@@ -256,7 +307,14 @@ class SCPI(object):
             ## If PYTHON 2, must use datatype of 'B' to get the same result
             datatype = 'B'
 
-        result = self._inst.write_binary_values(writeStr, values, datatype=datatype)
+        try:
+            result = self._inst.write_binary_values(writeStr, values, datatype=datatype)
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(writeStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+
         self.checkInstErrors(writeStr)
         return result
 
@@ -265,9 +323,24 @@ class SCPI(object):
             writeStr = self._prefix + writeStr
         #print("WRITE:",writeStr)
 
-        result = self._inst.write_binary_values(writeStr, values, datatype='f')
+        try:
+            result = self._inst.write_binary_values(writeStr, values, datatype='f')
+        except visa.VisaIOError as err:
+            # Got VISA exception so read and report any errors
+            self.checkInstErrors(writeStr)
+            print("Exited because of VISA IO Error: {}".format(err))
+            exit(1)
+
         self.checkInstErrors(writeStr)
         return result
+
+    def _getVersion(self):
+        """Query Software Version to handle command history deviations. This is called from open()."""
+        ## Skip Error check since handling of errors is version specific
+        idn = self._instQuery('*IDN?', checkErrors=False).split(',')
+        ver = idn[3].split('.')
+        # put major and minor version into floating point format so can numerically compare
+        self._version = float(ver[0]+'.'+ver[1])
 
     def idn(self):
         """Return response to *IDN? message"""
